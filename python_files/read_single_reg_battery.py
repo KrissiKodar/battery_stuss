@@ -17,10 +17,15 @@ remainingCapacityAddress = 0x0F
 fullChargeCapacityAddress = 0x10
 runTimeToEmpty = 0x11
 runTimeToFull = 0x12
+ManufacturingStatus = 0x57
+BatteryMode = 0x03
+BatteryStatus = 0x16
+OperationStatus = 0x54
+
 
 # read from the serial port and print the data
 # the port is COM6 in my case
-ser = serial.Serial('COM6', 9600, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+ser = serial.Serial('COM5', 9600, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
 
 # convert list of hex values into one decimal value
 def hex_to_dec(data):
@@ -28,6 +33,13 @@ def hex_to_dec(data):
     if not data:
         return 0
     return int(''.join(data), 16)
+
+
+# function that convert list of hex values into full binary string (register value)
+def hex_to_bin(data):
+    if not data:
+        return 0
+    return ''.join(format(int(x, 16), '08b') for x in data)
 
 # Extract each byte as is and put it in a list
 def data_to_list(data):
@@ -58,6 +70,14 @@ def user_input_processing(user_input):
         return runTimeToEmpty
     elif user_input == '11':
         return runTimeToFull
+    elif user_input == '12':
+        return ManufacturingStatus
+    elif user_input == '13':
+        return BatteryMode
+    elif user_input == '14':
+        return BatteryStatus
+    elif user_input == '15':
+        return OperationStatus
     else:
         return 0
 
@@ -97,6 +117,18 @@ def print_results(user_input, data):
     elif user_input == '11':
         print(f'Run Time to Full: {hex_to_dec(data_to_list(data))} min')
         return
+    elif user_input == '12':
+        print(f'Manufacturing Status: {hex_to_dec(data_to_list(data))}')
+        return
+    elif user_input == '13':
+        print(f'Battery Mode: {hex_to_dec(data_to_list(data))}')
+        return
+    elif user_input == '14':
+        print(f'Battery Status: {hex_to_dec(data_to_list(data))}')
+        return
+    elif user_input == '15':
+        print(f'Operation Status: {hex_to_bin(data_to_list(data))}')
+        print(f'len: {len(hex_to_bin(data_to_list(data)))}')
     else:
         print('Invalid input')
         return 0
@@ -117,8 +149,16 @@ while True:
     print('9. Full Charge Capacity')
     print('10. Run Time to Empty')
     print('11. Run Time to Full')
+    print('12. Manufacturing Status')
+    print('13. Battery Mode')
+    print('14. Battery Status')
+    print('15. Operation Status')
     #a = ser.write(b'\x09')
     # ask for user input
+    
+    # empty bytearray
+    empy_bytearray = bytearray()
+    
     user_input = input('Enter the address of the register you want to read: ')
 
     print(f'user input: {user_input}')
@@ -131,7 +171,31 @@ while True:
     data = ser.read(ser.in_waiting)
     #print(f'read {len(data)} bytes')
     time.sleep(0.1)
-    print_results(user_input, data)
+    print(len(data))
+    #print(data)
+    
+    # flip the bytes
+    data = data[::-1]
+    
+    print(data)
+    
+    
+    # if length of data is 4 bytes, the bytes are in little endian format
+    # make them big endian
+    
+    # for example instead of printint b'\x03\x20\x01\x07' print 0x03200107
+    print(''.join(format(x, '02x') for x in data))
+    
+    # print in binary format
+    print(''.join(format(x, '08b') for x in data))
+    
+    # print in decimal format
+    print(int.from_bytes(data, byteorder='big'))
+    
+    # b'' is in hex format
+    # print data with leading zeros if needed
+    print(type(data))
+    #print_results(user_input, data)
     # wait until user presses enter
     input('Press enter to continue')
     # clear terminal
