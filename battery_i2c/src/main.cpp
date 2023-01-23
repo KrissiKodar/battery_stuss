@@ -78,7 +78,7 @@
 #define DeviceChemistry             0x22
 #define ManufacturerData            0x23
 
-#define Authenticated               0x2f // baett vid
+//#define Authenticated               0x2f // baett vid ??????
 
 
 //#define Unknown_38                  0x38 // probably Cellvoltage4
@@ -100,21 +100,21 @@
 #define PeekROMBlock                0x43 // block read, size seems to be always 0x20 (32 bytes)
 #define FETControl                  0x46
 
-#define SafetyAlert                 0x50
-#define SafetyStatus                0x51
-#define PFAlert                     0x52
-#define PFStatus                    0x53
-#define OperationStatus             0x54
-#define ChargingStatus              0x55
-#define GaugingStatus               0x56 // baett vid
+#define SafetyAlert                 0x50 // Block 
+#define SafetyStatus                0x51 // Block 
+#define PFAlert                     0x52 // Block 
+#define PFStatus                    0x53 // Block 
+#define OperationStatus             0x54 // Block 
+#define ChargingStatus              0x55 // Block 
+#define GaugingStatus               0x56 // baett vid Block
 //#define ResetData                   0x57
-#define ManufacturingStatus         0x57 // baett vid
+#define ManufacturingStatus         0x57 // baett vid Block
 //#define WDResetData                 0x58
-#define AFERegister                 0x58 // baett vid
-#define MaxTurboPwr                 0x59 // baett vid (skrytid)
+//#define AFERegister                 0x58 // baett vid (skrytid) ???????
+#define MaxTurboPwr                 0x59 // baett vid (skrytid) ???????
 
 //#define PackVoltage                 0x5a
-#define SusTurboPwr                 0x5a // baett vid (skrytid)
+#define SusTurboPwr                 0x5a // baett vid (skrytid) ???????
 #define TURBO_PACK_R                0x5b // baett vid (skrytid)
 #define TURBO_SYS_R                 0x5c // baett vid (skrytid)
 
@@ -134,15 +134,15 @@
 //#define AuthenKey3                  0x63
 //#define AuthenKey2                  0x64
 
-#define LifetimeDataBlock1          0x60 // baett vid
-#define LifetimeDataBlock2          0x61 // baett vid
-#define LifetimeDataBlock3          0x62 // baett vid
-#define LifetimeDataBlock4          0x63 // baett vid
-#define LifetimeDataBlock5          0x64 // baett vid
+#define LifetimeDataBlock1          0x60 // baett vid Block
+#define LifetimeDataBlock2          0x61 // baett vid Block
+#define LifetimeDataBlock3          0x62 // baett vid Block
+#define LifetimeDataBlock4          0x63 // baett vid Block
+#define LifetimeDataBlock5          0x64 // baett vid Block
 
 //#define AuthenKey1                  0x65
 //#define AuthenKey0                  0x66
-#define ManufacturerInfo            0x70
+#define ManufacturerInfo            0x70 // Block
 
 //#define SenseResistor               0x71
 //#define TempRange                   0x72

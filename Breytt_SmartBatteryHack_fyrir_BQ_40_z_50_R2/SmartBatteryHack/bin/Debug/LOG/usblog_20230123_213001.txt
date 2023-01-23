@@ -1,0 +1,11 @@
+[INFO] Connecting to COM5
+
+[INFO] COM5 is opened by another application
+
+[INFO] Device not found at COM5
+
+[INFO] Connecting to COM5
+
+[INFO] COM5 is opened by another application
+
+[INFO] Device not found at COM5
