@@ -9,33 +9,6 @@ void setup() {
   
 }
 
-void print_data(byte data[], int len) {
-  // print the data as 1 16-bit integer
-  //for (int i = 0; i < len; i++) {
-  //  Serial.print(data[i], HEX);
-  //  Serial.print(" ");
-  //}
-  // data is little endian, flip the bytes around
-  for (int i = len - 1; i >= 0; i--) {
-    Serial.print(data[i]);
-    //Serial.print(" ");
-  }
-
-  // send out data normally
-  //for (int i = 0; i < len; i++) {
-  //  Serial.print(data[i], HEX);
-  //}
-  //Serial.print("= ");
-  // also print out converted to one 16-bit integer in decimal
-  //uint16_t val = data[0] << 8 | data[1];
-  // data is little endian, so shift the first byte 8 bits to the left
-  //uint16_t val = data[0] | data[1] << 8;
-  //Serial.print(val);
-}
-
-
-
-
 void out_values(byte regAddress, byte devAddress, byte arrLen)
 {
   byte dataVal[arrLen];
