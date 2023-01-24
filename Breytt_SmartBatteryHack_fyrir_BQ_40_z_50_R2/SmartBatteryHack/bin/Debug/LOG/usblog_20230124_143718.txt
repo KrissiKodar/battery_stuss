@@ -1,0 +1,163 @@
+[INFO] Connecting to COM6
+
+[<-TX] Handshake request (COM6)
+3D 00 02 01 00 03
+
+[RX->] Handshake response
+3D 00 08 81 00 53 42 48 41 43 4B 35
+
+[INFO] Handshake OK: SBHACK
+
+[INFO] Device connected (COM6)
+
+[RX->] Device settings
+3D 00 05 83 01 03 00 00 8C
+
+[INFO] Word byte-order: reverse read/write
+
+[INFO] Design voltage: 0.0 V
+
+[<-TX] SMBus register dump request
+3D 00 04 02 03 00 78 81
+
+[RX->] SMBus register dump (00-78)
+3D 01 79 82 03 00 78 00 01 87 01 01 2C 02 00 0A 03 60 01 04 00 00 05 FF FF 06 FF FF 07 00 01 08 
+0B 97 09 36 32 0A 00 00 0B 00 00 0C 00 01 0D 00 0E 0E 00 0D 0F 01 B9 10 0C 5A 11 FF FF 12 FF FF 
+13 FF FF 14 09 CC 15 41 A0 16 00 C0 17 00 00 18 0D 48 19 38 CC 1A 00 31 1B 53 94 1C 00 36 1D 00 
+36 1E 00 36 1F 00 36 20 0C 0A 57 61 6D 74 65 63 68 6E 69 6B 21 31 09 22 4C 04 23 31 1C 24 31 1C 
+25 31 1C 26 31 1C 27 31 1C 28 31 1C 29 31 1C 2A 31 1C 2B 31 1C 2C 31 1C 2D 31 1C 2E 31 1C 2F 00 
+14 30 00 1C 31 00 1C 32 00 1C 33 00 1C 34 00 1C 35 00 1C 36 00 1C 37 00 1C 38 00 1C 39 00 1C 3A 
+00 1C 3B 00 1C 3C 0D 8D 3D 0D 8A 3E 0D 8E 3F 0D 8E 40 17 17 41 17 17 42 00 FF 43 FF 20 44 00 16 
+45 00 16 46 00 16 47 00 16 48 00 16 49 00 16 4A 00 96 4B 00 AF 4C 00 AF 4D 00 AF 4E 00 AF 4F 00 
+64 50 00 04 51 00 04 52 00 04 53 00 04 54 87 04 55 08 03 56 50 03 57 F8 02 58 00 15 59 DF 2F 5A 
+E4 FE 5B 00 00 5C 00 00 5D 23 28 5E DB 8A 5F E5 70 60 00 00 61 02 08 62 1D 10 63 00 20 64 00 20 
+65 00 20 66 00 20 67 00 20 68 00 20 69 00 20 6A 00 20 6B 00 20 6C 00 20 6D 00 20 6E 00 20 6F 00 
+20 70 31 1C 71 8E 20 72 99 10 73 B9 20 74 00 20 75 C4 20 76 AC 12 77 B8 04 78 B9 08 45
+
+[INFO] SMBus register dump details (00-78):
+[00]: 01 87 // ManufacturerAccess: 01 87
+[01]: 01 2C // RemainingCapacityAlarm: 300 mAh
+[02]: 00 0A // RemainingTimeAlarm: 10 minutes
+[03]: 60 01 // BatteryMode: 0110000000000001
+[04]: 00 00 // AtRate: 0 minutes
+[05]: FF FF // AtRateTimeToFull: 65535 minutes
+[06]: FF FF // AtRateTimeToEmpty: 65535 minutes
+[07]: 00 01 // AtRateOK: true
+[08]: 0B 97 // Temperature: 26.94°C
+[09]: 36 32 // Voltage: 13.874 V
+[0A]: 00 00 // Current: 0 A
+[0B]: 00 00 // AverageCurrent: 0 A
+[0C]: 00 01 // MaxError: 1%
+[0D]: 00 0E // RelativeStateOfCharge: 14%
+[0E]: 00 0D // AbsoluteStateOfCharge: 13%
+[0F]: 01 B9 // RemainingCapacity: 441 mAh
+[10]: 0C 5A // FullChargeCapacity: 3162 mAh
+[11]: FF FF // RunTimeToEmpty: 65535 minutes
+[12]: FF FF // AverageTimeToEmpty: 65535 minutes
+[13]: FF FF // AverageTimeToFull: 65535 minutes
+[14]: 09 CC // ChargingCurrent: 2.508 A
+[15]: 41 A0 // ChargingVoltage: 16.8 V
+[16]: 00 C0 // BatteryStatus: 0000000011000000
+[17]: 00 00 // CycleCount: 0
+[18]: 0D 48 // DesignCapacity: 3400 mAh
+[19]: 38 CC // DesignVoltage: 14.54 V
+[1A]: 00 31 // SpecificationInfo: 0000000000110001
+[1B]: 53 94 // ManufactureDate: 2021.12.20
+[1C]: 00 36 // SerialNumber: 00 36
+[1D]: 00 36 // 00 36
+[1E]: 00 36 // 00 36
+[1F]: 00 36 // 00 36
+[20]: 00 00 // ManufacturerName: 
+Wamtechnik!
+[21]: 4C 04 // DeviceName: 
+Wamtechnik!
+[22]: 31 1C // DeviceChemistry: 
+Wamtechnik!
+[23]: 31 1C // ManufacturerData: 
+Wamtechnik!
+[24]: 31 1C // 31 1C
+[25]: 31 1C // 31 1C
+[26]: 31 1C // 31 1C
+[27]: 31 1C // 31 1C
+[28]: 31 1C // 31 1C
+[29]: 31 1C // 31 1C
+[2A]: 31 1C // 31 1C
+[2B]: 31 1C // 31 1C
+[2C]: 31 1C // 31 1C
+[2D]: 31 1C // 31 1C
+[2E]: 00 14 // 00 14
+[2F]: 00 1C // 00 1C
+[30]: 00 1C // 00 1C
+[31]: 00 1C // 00 1C
+[32]: 00 1C // 00 1C
+[33]: 00 1C // 00 1C
+[34]: 00 1C // 00 1C
+[35]: 00 1C // 00 1C
+[36]: 00 1C // 00 1C
+[37]: 00 1C // 00 1C
+[38]: 00 1C // 00 1C
+[39]: 00 1C // 00 1C
+[3A]: 00 1C // 00 1C
+[3B]: 0D 8D // 0D 8D
+[3C]: 0D 8A // Cell voltage 4: 3.466 V
+[3D]: 0D 8E // Cell voltage 3: 3.47 V
+[3E]: 0D 8E // Cell voltage 2: 3.47 V
+[3F]: 17 17 // Cell voltage 1: 5.911 V
+[40]: 17 17 // 17 17
+[41]: 00 FF // 00 FF
+[42]: FF 20 // FF 20
+[43]: 00 16 // 00 16
+[44]: 00 16 // 00 16
+[45]: 00 16 // 00 16
+[46]: 00 16 // 00 16
+[47]: 00 16 // 00 16
+[48]: 00 16 // 00 16
+[49]: 00 96 // 00 96
+[4A]: 00 AF // BTP discharge set: 175 mAh
+[4B]: 00 AF // BTP charge set: 175 mAh
+[4C]: 00 AF // 00 AF
+[4D]: 00 AF // 00 AF
+[4E]: 00 64 // 00 64
+[4F]: 00 04 // State-of-Health: 4%
+[50]: 00 04 // Safety Alert: 0000000000000100
+[51]: 00 04 // Safety Status: 0000000000000100
+[52]: 00 04 // PF Alert: 0000000000000100
+[53]: 87 04 // PF Status: 1000011100000100
+[54]: 08 03 // Operation Status: 0000100000000011
+[55]: 50 03 // Charging Status: 0101000000000011
+[56]: F8 02 // Gauging Status: 1111100000000010
+[57]: 00 15 // Manufacturing Status: 0000000000010101
+[58]: DF 2F // DF 2F
+[59]: E4 FE // Max Turbo Power: 58622 cW
+[5A]: 00 00 // Sus Turbo Power: 0 cW
+[5B]: 00 00 // Turbo Pack Resistance: 0 mOhm
+[5C]: 23 28 // Turbo System Resistance: 9000 mOhm
+[5D]: DB 8A // Turbo EDV: 56202 mV
+[5E]: E5 70 // Max Turbo Current: 58736 mA
+[5F]: 00 00 // Sus Turbo Current: 0 mA
+[60]: 02 08 // LifetimeDataBlock 1: 0000001000001000
+[61]: 1D 10 // LifetimeDataBlock 1: 0001110100010000
+[62]: 00 20 // LifetimeDataBlock 1: 0000000000100000
+[63]: 00 20 // LifetimeDataBlock 1: 0000000000100000
+[64]: 00 20 // LifetimeDataBlock 1: 0000000000100000
+[65]: 00 20 // 00 20
+[66]: 00 20 // 00 20
+[67]: 00 20 // 00 20
+[68]: 00 20 // 00 20
+[69]: 00 20 // 00 20
+[6A]: 00 20 // 00 20
+[6B]: 00 20 // 00 20
+[6C]: 00 20 // 00 20
+[6D]: 00 20 // 00 20
+[6E]: 00 20 // 00 20
+[6F]: 31 1C // 31 1C
+[70]: 8E 20 // Manufacturer Info: 1000111000100000
+[71]: 99 10 // DA Status 1: 1001100100010000
+[72]: B9 20 // DA Status 2: 1011100100100000
+[73]: 00 20 // Gauge Status 1: 0000000000100000
+[74]: C4 20 // Gauge Status 2: 1100010000100000
+[75]: AC 12 // Gauge Status 3: 1010110000010010
+[76]: B8 04 // CB Status: 1011100000000100
+[77]: B9 08 // State-of-Health: 1011100100001000
+
+[INFO] Device disconnected (COM6)

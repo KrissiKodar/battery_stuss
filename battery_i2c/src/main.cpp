@@ -336,6 +336,17 @@ uint8_t read_block(uint8_t reg, uint8_t* block_buffer)
     return (read_length + 1);
 }
 
+uint8_t get_block_length(uint8_t reg)
+{
+    i2c_start((sb_address << 1) | I2C_WRITE);
+    i2c_write(reg);
+    i2c_rep_start((sb_address << 1) | I2C_READ);
+
+    uint8_t read_length = i2c_read(true); // first byte is length
+    i2c_stop();
+    return (read_length+1);
+}
+
 uint8_t write_block(uint8_t reg, uint8_t* block_buffer, uint8_t block_buffer_length)
 {
     i2c_start((sb_address << 1) | I2C_WRITE);
@@ -374,20 +385,59 @@ void scan_smbus_address(void)
     else send_usb_packet(status, sd_scan_smbus_address, err, 1);
 }
 
+bool is_block(int reg)
+{
+    if ((reg == ManufacturerName) || (reg == DeviceName) || (reg == DeviceChemistry) || (reg == ManufacturerData) || (reg == SafetyAlert) || (reg == SafetyStatus) 
+        || (reg == PFAlert) || (reg == PFStatus) || (reg == OperationStatus) || (reg == ChargingStatus) || (reg == GaugingStatus) || (reg == LifetimeDataBlock1) 
+        || (reg == LifetimeDataBlock2) || (reg == LifetimeDataBlock3) || (reg == LifetimeDataBlock4) || (reg == LifetimeDataBlock5) || (reg == ManufacturerInfo)
+        || (reg == DAStatus1) || (reg == DAStatus2) || (reg == GaugeStatus1) || (reg == GaugeStatus2) || (reg == GaugeStatus3) || (reg == CBStatus) || (reg == StateOfHealth2)
+        || (reg == FilteredCapacity)) return true;
+    else return false;
+}
+
 void smbus_reg_dump(void)
 {
+
     uint16_t smbus_reg_dump_payload_length = 3*(smbus_reg_end - smbus_reg_start + 1) + 2;
+    
+    uint8_t one_block_length = get_block_length(0x20);
+    smbus_reg_dump_payload_length += one_block_length - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    
     uint8_t smbus_reg_dump_payload[smbus_reg_dump_payload_length]; // max 770 bytes
     smbus_reg_dump_payload[0] = smbus_reg_start; // start register
     smbus_reg_dump_payload[1] = smbus_reg_end; // end register
     uint16_t data = 0;
     
+    uint16_t position_counter = 0;
+    
     for (uint16_t i = smbus_reg_start; i < (smbus_reg_end + 1); i++)
     {
-        data = read_word(i, reverse_read_word_byte_order);
-        smbus_reg_dump_payload[2 + (3*(i-smbus_reg_start))] = i; // register first
-        smbus_reg_dump_payload[3 + (3*(i-smbus_reg_start))] = (data >> 8) & 0xFF; // high byte of the word there
-        smbus_reg_dump_payload[4 + (3*(i-smbus_reg_start))] = data & 0xFF; // low byte of the word there
+        if ((i == 0x20)||(i == 0x22)) // read and send block
+        {
+            uint8_t block_length = read_block(i, buffer);
+            uint8_t response_length = block_length + 1;
+            uint8_t response[response_length];
+            response[0] = i;
+            
+            for (uint8_t j = 0; j < block_length; j++)
+            {
+                response[1 + j] = buffer[j];
+            }
+            smbus_reg_dump_payload[2 + (3*(i-smbus_reg_start)) + position_counter] = i; // register first
+            //smbus_reg_dump_payload[3 + (3*(i-smbus_reg_start)) + position_counter] = response_length; // length of the block
+            for (uint8_t k = 1; k < response_length; k++)
+            {
+                smbus_reg_dump_payload[3 + (3*(i-smbus_reg_start)) + position_counter + k - 1] = response[k]; // block data
+            }
+            position_counter += response_length - 3; //
+        }
+        else
+        {
+            data = read_word(i, reverse_read_word_byte_order);
+            smbus_reg_dump_payload[2 + (3*(i-smbus_reg_start)) + position_counter] = i; // register first
+            smbus_reg_dump_payload[3 + (3*(i-smbus_reg_start)) + position_counter] = (data >> 8) & 0xFF; // high byte of the word there
+            smbus_reg_dump_payload[4 + (3*(i-smbus_reg_start)) + position_counter] = data & 0xFF; // low byte of the word there
+        }
     }
     
     send_usb_packet(status, sd_smbus_reg_dump, smbus_reg_dump_payload, smbus_reg_dump_payload_length);

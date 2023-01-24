@@ -2,13 +2,18 @@
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text;
 using System.Timers;
 using System.Windows.Forms;
+
+
+
 
 namespace SmartBatteryHack
 {
@@ -259,6 +264,7 @@ namespace SmartBatteryHack
             }
         }
 
+
         private void SerialDataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
         {
             SerialPort sp = (SerialPort)sender;
@@ -393,18 +399,107 @@ namespace SmartBatteryHack
                                             Util.UpdateTextBox(CommunicationTextBox, "[RX->] SMBus register dump (" + Util.ByteToHexString(Payload, 0, 1) + "-" + Util.ByteToHexString(Payload, 1, 2) + ")", Packet);
                                             if (Payload.Length > 2)
                                             {
+                                                const int ManufacturerName = 0x20;
+                                                const int DeviceName = 0x21;
+                                                const int DeviceChemistry = 0x22;
+                                                const int ManufacturerData = 0x23;//#define Authenticated    =      ;      0x2f // baett vid ??????
+                                                const int SafetyAlert = 0x50; // Block 
+                                                const int SafetyStatus = 0x51; // Block 
+                                                const int PFAlert = 0x52; // Block 
+                                                const int PFStatus = 0x53; // Block 
+                                                const int OperationStatus = 0x54; // Block 
+                                                const int ChargingStatus = 0x55; // Block 
+                                                const int GaugingStatus = 0x56; // baett vid Block
+                                                const int ManufacturingStatus = 0x57; // baett vid Block
+                                                const int LifetimeDataBlock1 = 0x60; // baett vid Block
+                                                const int LifetimeDataBlock2 = 0x61; // baett vid Block
+                                                const int LifetimeDataBlock3 = 0x62; // baett vid Block
+                                                const int LifetimeDataBlock4 = 0x63; // baett vid Block
+                                                const int LifetimeDataBlock5 = 0x64; // baett vid Block
+                                                const int ManufacturerInfo = 0x70; // Block
+                                                const int DAStatus1 = 0x71; // baett vid
+                                                const int DAStatus2 = 0x72; // baett vid
+                                                const int GaugeStatus1 = 0x73; // baett vid
+                                                const int GaugeStatus2 = 0x74; // baett vid
+                                                const int GaugeStatus3 = 0x75; // baett vid
+                                                const int CBStatus = 0x76; // baett vid
+                                                const int StateOfHealth2 = 0x77; // baett vid
+                                                const int FilteredCapacity = 0x78; // baett vid
+
+
+                                                int[] all_block_reads = {ManufacturerName
+                                                                            ,DeviceName
+                                                                            ,DeviceChemistry
+                                                                            ,ManufacturerData
+                                                                            ,SafetyAlert
+                                                                            ,SafetyStatus
+                                                                            ,PFAlert
+                                                                            ,PFStatus
+                                                                            ,OperationStatus
+                                                                            ,ChargingStatus
+                                                                            ,GaugingStatus
+                                                                            ,ManufacturingStatus
+                                                                            ,LifetimeDataBlock1
+                                                                            ,LifetimeDataBlock2
+                                                                            ,LifetimeDataBlock3
+                                                                            ,LifetimeDataBlock4
+                                                                            ,LifetimeDataBlock5
+                                                                            ,ManufacturerInfo
+                                                                            ,DAStatus1
+                                                                            ,DAStatus2
+                                                                            ,GaugeStatus1
+                                                                            ,GaugeStatus2
+                                                                            ,GaugeStatus3
+                                                                            ,CBStatus
+                                                                            ,StateOfHealth2
+                                                                            ,FilteredCapacity };
+
                                                 SMBusRegisterDumpList.Clear();
+
+                                                ushort iterate_reg = 0;
+                                                List<byte> block_list = new List<byte>();
+                                                List<byte> block_lengths = new List<byte>();
+
 
                                                 for (int i = 1; i < (Payload.Length - 2); i++)
                                                 {
                                                     i += 2;
-                                                    SMBusRegisterDumpList.Add((ushort)((Payload[i] << 8) + Payload[i + 1]));
+
+                                                    if ((iterate_reg == 0x20)||(iterate_reg == 0x22))//all_block_reads.Contains(iterate_reg))
+                                                    {
+                                                        byte data_len = (byte)(Payload[i]);
+
+                                                        block_lengths.Add(data_len);
+
+
+                                                        //i += 1; // utaf lengdar byte, kemur svona: reg, lengd, data -------> lengd taknar lengd af data i bytes
+                                                        
+                                                        SMBusRegisterDumpList.Add((ushort)0); // setja bara eitthvad 16 bita gildi
+
+                                                        for (int k= 0; k < data_len; k++)
+                                                        {
+                                                            block_list.Add(Payload[i + k +1]);
+                                                        }
+
+                                                        i += data_len -1; // til ad SMBusRegisterDumpList tekur allar 16 bita tolur rett
+
+                                                    }
+                                                    else
+                                                    {
+                                                        SMBusRegisterDumpList.Add((ushort)((Payload[i] << 8) + Payload[i + 1]));
+                                                    }
+                                                    iterate_reg += 1;
+
                                                 }
 
                                                 byte[] data = new byte[2];
                                                 StringBuilder value = new StringBuilder();
                                                 byte start_reg = Payload[0];
                                                 byte current_reg = 0;
+                                                
+                                                byte[] data_for_blocks = block_list.ToArray();
+                                                byte[] lengths_for_blocks = block_lengths.ToArray();
+
 
                                                 for (int i = 0; i < SMBusRegisterDumpList.Count; i++)
                                                 {
@@ -412,7 +507,10 @@ namespace SmartBatteryHack
                                                     data[1] = (byte)(SMBusRegisterDumpList[i] & 0xFF);
                                                     current_reg = (byte)(i + start_reg);
                                                     value.Append("[" + Util.ByteToHexString(new byte[] { current_reg }, 0, 1) + "]: " + Util.ByteToHexString(data, 0, data.Length) + " // ");
-
+                                                    
+                                                    
+                                                    
+                                                    
                                                     switch (current_reg)
                                                     {
                                                         case 0x00:
@@ -518,16 +616,21 @@ namespace SmartBatteryHack
                                                             value.Append("SerialNumber: " + Util.ByteToHexString(data, 0, data.Length));
                                                             break;
                                                         case 0x20:
-                                                            value.Append("ManufacturerName: " + Util.ByteToHexString(data, 0, data.Length));
+                                                            
+                                                            //string block_NAMES = Encoding.ASCII.GetString(data_for_blocks, 0, lengths_for_blocks[0]);
+                                                            //byte[] data_test1 = new byte[block_list.Count];
+                                                            //for(int s = 0; s < block_list.Count; s++)
+                                                            //    data_test1[s] = block_list[s];
+                                                            value.Append("ManufacturerName: " + Encoding.ASCII.GetString(data_for_blocks, 0, lengths_for_blocks[0]));
                                                             break;
                                                         case 0x21:
-                                                            value.Append("DeviceName: " + Util.ByteToHexString(data, 0, data.Length));
+                                                            value.Append("DeviceName: " + " ");
                                                             break;
                                                         case 0x22:
-                                                            value.Append("DeviceChemistry: " + Util.ByteToHexString(data, 0, data.Length));
+                                                            value.Append("DeviceChemistry: " + Encoding.ASCII.GetString(data_for_blocks, lengths_for_blocks[0], lengths_for_blocks[1]));
                                                             break;
                                                         case 0x23:
-                                                            value.Append("ManufacturerData: " + Util.ByteToHexString(data, 0, data.Length));
+                                                            value.Append("ManufacturerData: " + " ");
                                                             break;
                                                         case 0x3C:
                                                             Double CellVoltage4 = SMBusRegisterDumpList[i] / 1000D;
@@ -645,10 +748,9 @@ namespace SmartBatteryHack
                                                             value.Append(Util.ByteToHexString(data, 0, data.Length));
                                                             break;
                                                     }
-
                                                     if (i != (SMBusRegisterDumpList.Count - 1)) value.Append(Environment.NewLine);
                                                 }
-
+                                                
                                                 Util.UpdateTextBox(CommunicationTextBox, "[INFO] SMBus register dump details (" + Util.ByteToHexString(Payload, 0, 1) + "-" + Util.ByteToHexString(Payload, 1, 2) + "):" + Environment.NewLine + value.ToString(), null);
                                             }
                                             break;

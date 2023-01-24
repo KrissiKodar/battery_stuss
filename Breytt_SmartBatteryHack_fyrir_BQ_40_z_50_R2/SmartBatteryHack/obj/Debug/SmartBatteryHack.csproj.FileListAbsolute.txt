@@ -10,3 +10,15 @@ C:\repos\SmartBatteryHack\GUI\SmartBatteryHack\SmartBatteryHack\obj\Debug\SmartB
 C:\repos\SmartBatteryHack\GUI\SmartBatteryHack\SmartBatteryHack\obj\Debug\SmartBatteryHack.csproj.CoreCompileInputs.cache
 C:\repos\SmartBatteryHack\GUI\SmartBatteryHack\SmartBatteryHack\obj\Debug\SmartBatteryHack.exe
 C:\repos\SmartBatteryHack\GUI\SmartBatteryHack\SmartBatteryHack\obj\Debug\SmartBatteryHack.pdb
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\bin\Debug\SmartBatteryHack.exe.config
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\bin\Debug\SmartBatteryHack.exe
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\bin\Debug\SmartBatteryHack.pdb
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\obj\Debug\SmartBatteryHack.csproj.AssemblyReference.cache
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\obj\Debug\SmartBatteryHack.csproj.SuggestedBindingRedirects.cache
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\obj\Debug\SmartBatteryHack.AboutForm.resources
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\obj\Debug\SmartBatteryHack.MainForm.resources
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\obj\Debug\SmartBatteryHack.Properties.Resources.resources
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\obj\Debug\SmartBatteryHack.csproj.GenerateResource.cache
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\obj\Debug\SmartBatteryHack.csproj.CoreCompileInputs.cache
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\obj\Debug\SmartBatteryHack.exe
+C:\repos\battery_stuss\Breytt_SmartBatteryHack_fyrir_BQ_40_z_50_R2\SmartBatteryHack\obj\Debug\SmartBatteryHack.pdb

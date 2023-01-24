@@ -1,0 +1,26 @@
+[INFO] Connecting to COM6
+
+[<-TX] Handshake request (COM6)
+3D 00 02 01 00 03
+
+[RX->] Handshake response
+3D 00 08 81 00 53 42 48 41 43 4B 35
+
+[INFO] Handshake OK: SBHACK
+
+[INFO] Device connected (COM6)
+
+[RX->] Device settings
+3D 00 05 83 01 03 00 00 8C
+
+[INFO] Word byte-order: reverse read/write
+
+[INFO] Design voltage: 0.0 V
+
+[<-TX] SMBus register dump request
+3D 00 04 02 03 00 10 19
+
+[RX->] SMBus register dump (00-10)
+3D 00 41 82 03 00 10 00 01 87 01 01 2C 02 00 0A 03 60 01 04 00 00 05 FF FF 06 FF FF 07 00 01 08 
+0B 97 09 36 31 0A 00 00 0B 00 00 0C 00 01 0D 00 0E 0E 00 0D 0F 01 B9 10 0C 5A F1 00 0A 02 02 02 
+80 00 07 3C 84
