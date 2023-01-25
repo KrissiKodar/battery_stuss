@@ -510,7 +510,7 @@ namespace SmartBatteryHack
                                                         
                                                     }
                                                     iterate_reg += 1;
-                                                    if (iterate_reg > 0x78)
+                                                    if (iterate_reg > Payload[1])
                                                     {
                                                         break;
                                                     }
