@@ -386,11 +386,12 @@ void scan_smbus_address(void)
 }
 
 bool is_block(int reg)
-{
+{   // ||(reg == LifetimeDataBlock1) 
     if ((reg == ManufacturerName) || (reg == DeviceName) || (reg == DeviceChemistry) || (reg == ManufacturerData) || (reg == SafetyAlert) || (reg == SafetyStatus) 
-        || (reg == PFAlert) || (reg == PFStatus) || (reg == OperationStatus) || (reg == ChargingStatus) || (reg == GaugingStatus) || (reg == LifetimeDataBlock1) 
-        || (reg == LifetimeDataBlock2) || (reg == LifetimeDataBlock3) || (reg == LifetimeDataBlock4) || (reg == LifetimeDataBlock5) || (reg == ManufacturerInfo)
-        || (reg == DAStatus1) || (reg == DAStatus2) || (reg == GaugeStatus1) || (reg == GaugeStatus2) || (reg == GaugeStatus3) || (reg == CBStatus) || (reg == StateOfHealth2)
+        || (reg == PFAlert) || (reg == PFStatus) || (reg == OperationStatus) || (reg == ChargingStatus) || (reg == GaugingStatus)|| (reg == ManufacturingStatus) || (reg == LifetimeDataBlock2) 
+        || (reg == LifetimeDataBlock3) || (reg == LifetimeDataBlock4) || (reg == LifetimeDataBlock5) || (reg == ManufacturerInfo)
+        || (reg == DAStatus1) || (reg == DAStatus2) || (reg == GaugeStatus1) || (reg == GaugeStatus2) || (reg == GaugeStatus3) 
+        || (reg == CBStatus) || (reg == StateOfHealth2)
         || (reg == FilteredCapacity)) return true;
     else return false;
 }
@@ -400,9 +401,26 @@ void smbus_reg_dump(void)
 
     uint16_t smbus_reg_dump_payload_length = 3*(smbus_reg_end - smbus_reg_start + 1) + 2;
     
-    uint8_t one_block_length = get_block_length(0x20);
-    smbus_reg_dump_payload_length += one_block_length - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+
+    /* smbus_reg_dump_payload_length += get_block_length(0x20) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x21) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x22) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x23) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x50) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x51) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x52) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x53) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x54) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x55) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x56) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x57) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    smbus_reg_dump_payload_length += get_block_length(0x60) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina */
     
+    for (uint16_t i = smbus_reg_start; i < (smbus_reg_end + 1); i++)
+    {
+        if (is_block(i)) smbus_reg_dump_payload_length += get_block_length(i) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    }
+
     uint8_t smbus_reg_dump_payload[smbus_reg_dump_payload_length]; // max 770 bytes
     smbus_reg_dump_payload[0] = smbus_reg_start; // start register
     smbus_reg_dump_payload[1] = smbus_reg_end; // end register
@@ -412,7 +430,7 @@ void smbus_reg_dump(void)
     
     for (uint16_t i = smbus_reg_start; i < (smbus_reg_end + 1); i++)
     {
-        if ((i == 0x20)||(i == 0x22)) // read and send block
+        if (is_block(i)) // read and send block
         {
             uint8_t block_length = read_block(i, buffer);
             uint8_t response_length = block_length + 1;

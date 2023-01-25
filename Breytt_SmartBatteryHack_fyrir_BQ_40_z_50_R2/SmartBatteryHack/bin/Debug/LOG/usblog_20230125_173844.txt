@@ -1,0 +1,636 @@
+[INFO] Connecting to COM5
+
+[<-TX] Handshake request (COM5)
+3D 00 02 01 00 03
+
+[RX->] Handshake response
+3D 00 08 81 00 53 42 48 41 43 4B 35
+
+[INFO] Handshake OK: SBHACK
+
+[INFO] Device connected (COM5)
+
+[RX->] Device settings
+3D 00 05 83 01 03 00 00 8C
+
+[INFO] Word byte-order: reverse read/write
+
+[INFO] Design voltage: 0.0 V
+
+[<-TX] SMBus register dump request
+3D 00 04 02 03 00 78 81
+
+[RX->] SMBus register dump (00-78)
+3D 02 DE 82 03 00 78 00 01 87 01 01 2C 02 00 0A 03 60 01 04 00 00 05 FF FF 06 FF FF 07 00 01 08 
+0B 7E 09 36 1E 0A 00 00 0B 00 00 0C 00 01 0D 00 0E 0E 00 0D 0F 01 AE 10 0C 5B 11 FF FF 12 FF FF 
+13 FF FF 14 09 CC 15 41 A0 16 00 C0 17 00 00 18 0D 48 19 38 CC 1A 00 31 1B 53 94 1C 00 36 1D 00 
+36 1E 00 36 1F 00 36 20 0A 57 61 6D 74 65 63 68 6E 69 6B 21 09 31 39 33 36 2E 31 42 2D 36 22 04 
+4C 49 4F 4E 23 1C 31 39 33 36 44 31 35 31 32 30 32 31 30 30 35 34 30 30 30 30 31 42 2D 36 44 00 
+00 00 24 31 1C 25 31 1C 26 31 1C 27 31 1C 28 31 1C 29 31 1C 2A 31 1C 2B 31 1C 2C 31 1C 2D 31 1C 
+2E 31 1C 2F 00 14 30 00 1C 31 00 1C 32 00 1C 33 00 1C 34 00 1C 35 00 1C 36 00 1C 37 00 1C 38 00 
+1C 39 00 1C 3A 00 1C 3B 00 1C 3C 0D 88 3D 0D 85 3E 0D 89 3F 0D 89 40 17 17 41 17 17 42 00 FF 43 
+FF 20 44 00 16 45 00 16 46 00 16 47 00 16 48 00 16 49 00 16 4A 00 96 4B 00 AF 4C 00 AF 4D 00 AF 
+4E 00 AF 4F 00 64 50 04 00 00 00 00 51 04 00 00 00 00 52 04 00 00 00 00 53 04 00 00 00 00 54 04 
+87 01 00 00 55 03 08 02 00 56 03 50 11 00 57 F8 02 58 00 15 59 E0 E8 5A E5 8D 5B 00 00 5C 00 00 
+5D 23 28 5E DD 74 5F E5 70 60 00 61 08 02 00 04 00 00 00 00 00 62 10 2A 02 00 00 00 00 A2 00 80 
+01 07 00 00 00 00 00 63 20 00 00 00 00 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 64 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 03 00 00 00 65 00 20 66 00 20 67 00 20 68 00 20 69 00 20 6A 00 20 6B 00 20 
+6C 00 20 6D 00 20 6E 00 20 6F 00 20 70 1C 31 39 33 36 44 31 35 31 32 30 32 31 30 30 35 34 30 30 
+30 30 31 42 2D 36 44 00 00 00 71 20 89 0D 89 0D 85 0D 89 0D 7A 36 70 36 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 72 10 7F 0B 7E 0B 7D 0B BE 11 C1 11 7E 0B 00 00 7E 0B 73 20 
+AE 01 F7 01 AF 0A 07 0F 5B 0C FB 10 6B 0B 7E 0B E8 03 E8 03 E8 03 E8 03 00 00 00 00 00 00 00 00 
+74 20 00 0E 00 00 00 00 E8 C6 06 00 F6 31 F7 31 36 32 06 32 FE FF FD FF 35 00 48 00 B0 00 00 00 
+40 00 75 20 C4 0D E7 0D B8 0D C6 0D 00 00 00 00 00 00 00 00 86 FC 10 09 D3 00 D4 0B 40 32 40 32 
+90 32 60 32 76 12 AC 0E 00 00 AB 0E AB 0E 00 40 00 40 00 40 00 40 00 40 77 04 B8 0D 70 13 78 08 
+AE 01 F6 01 5B 0C FB 10 00 05 83 01 03 00 02 89 02 34 08 DB 03 34 FF ED 00 08 00 08 02 80 00 07 
+74 26
+
+!!!!!!!!!!!!!! 
+
+Register (bara 2): 
+00
+
+bara 2 highest index: 4
+
+Register (bara 2): 
+01
+
+bara 2 highest index: 7
+
+Register (bara 2): 
+02
+
+bara 2 highest index: 10
+
+Register (bara 2): 
+03
+
+bara 2 highest index: 13
+
+Register (bara 2): 
+04
+
+bara 2 highest index: 16
+
+Register (bara 2): 
+05
+
+bara 2 highest index: 19
+
+Register (bara 2): 
+06
+
+bara 2 highest index: 22
+
+Register (bara 2): 
+07
+
+bara 2 highest index: 25
+
+Register (bara 2): 
+08
+
+bara 2 highest index: 28
+
+Register (bara 2): 
+09
+
+bara 2 highest index: 31
+
+Register (bara 2): 
+0A
+
+bara 2 highest index: 34
+
+Register (bara 2): 
+0B
+
+bara 2 highest index: 37
+
+Register (bara 2): 
+0C
+
+bara 2 highest index: 40
+
+Register (bara 2): 
+0D
+
+bara 2 highest index: 43
+
+Register (bara 2): 
+0E
+
+bara 2 highest index: 46
+
+Register (bara 2): 
+0F
+
+bara 2 highest index: 49
+
+Register (bara 2): 
+10
+
+bara 2 highest index: 52
+
+Register (bara 2): 
+11
+
+bara 2 highest index: 55
+
+Register (bara 2): 
+12
+
+bara 2 highest index: 58
+
+Register (bara 2): 
+13
+
+bara 2 highest index: 61
+
+Register (bara 2): 
+14
+
+bara 2 highest index: 64
+
+Register (bara 2): 
+15
+
+bara 2 highest index: 67
+
+Register (bara 2): 
+16
+
+bara 2 highest index: 70
+
+Register (bara 2): 
+17
+
+bara 2 highest index: 73
+
+Register (bara 2): 
+18
+
+bara 2 highest index: 76
+
+Register (bara 2): 
+19
+
+bara 2 highest index: 79
+
+Register (bara 2): 
+1A
+
+bara 2 highest index: 82
+
+Register (bara 2): 
+1B
+
+bara 2 highest index: 85
+
+Register (bara 2): 
+1C
+
+bara 2 highest index: 88
+
+Register (bara 2): 
+1D
+
+bara 2 highest index: 91
+
+Register (bara 2): 
+1E
+
+bara 2 highest index: 94
+
+Register (bara 2): 
+1F
+
+bara 2 highest index: 97
+
+Reg of block: 
+20
+
+block highest payload index: 109
+
+block data length 10
+
+Reg of block: 
+21
+
+block highest payload index: 120
+
+block data length 9
+
+Reg of block: 
+22
+
+block highest payload index: 126
+
+block data length 4
+
+Reg of block: 
+23
+
+block highest payload index: 156
+
+block data length 28
+
+Register (bara 2): 
+24
+
+bara 2 highest index: 159
+
+Register (bara 2): 
+25
+
+bara 2 highest index: 162
+
+Register (bara 2): 
+26
+
+bara 2 highest index: 165
+
+Register (bara 2): 
+27
+
+bara 2 highest index: 168
+
+Register (bara 2): 
+28
+
+bara 2 highest index: 171
+
+Register (bara 2): 
+29
+
+bara 2 highest index: 174
+
+Register (bara 2): 
+2A
+
+bara 2 highest index: 177
+
+Register (bara 2): 
+2B
+
+bara 2 highest index: 180
+
+Register (bara 2): 
+2C
+
+bara 2 highest index: 183
+
+Register (bara 2): 
+2D
+
+bara 2 highest index: 186
+
+Register (bara 2): 
+2E
+
+bara 2 highest index: 189
+
+Register (bara 2): 
+2F
+
+bara 2 highest index: 192
+
+Register (bara 2): 
+30
+
+bara 2 highest index: 195
+
+Register (bara 2): 
+31
+
+bara 2 highest index: 198
+
+Register (bara 2): 
+32
+
+bara 2 highest index: 201
+
+Register (bara 2): 
+33
+
+bara 2 highest index: 204
+
+Register (bara 2): 
+34
+
+bara 2 highest index: 207
+
+Register (bara 2): 
+35
+
+bara 2 highest index: 210
+
+Register (bara 2): 
+36
+
+bara 2 highest index: 213
+
+Register (bara 2): 
+37
+
+bara 2 highest index: 216
+
+Register (bara 2): 
+38
+
+bara 2 highest index: 219
+
+Register (bara 2): 
+39
+
+bara 2 highest index: 222
+
+Register (bara 2): 
+3A
+
+bara 2 highest index: 225
+
+Register (bara 2): 
+3B
+
+bara 2 highest index: 228
+
+Register (bara 2): 
+3C
+
+bara 2 highest index: 231
+
+Register (bara 2): 
+3D
+
+bara 2 highest index: 234
+
+Register (bara 2): 
+3E
+
+bara 2 highest index: 237
+
+Register (bara 2): 
+3F
+
+bara 2 highest index: 240
+
+Register (bara 2): 
+40
+
+bara 2 highest index: 243
+
+Register (bara 2): 
+41
+
+bara 2 highest index: 246
+
+Register (bara 2): 
+42
+
+bara 2 highest index: 249
+
+Register (bara 2): 
+43
+
+bara 2 highest index: 252
+
+Register (bara 2): 
+44
+
+bara 2 highest index: 255
+
+Register (bara 2): 
+45
+
+bara 2 highest index: 258
+
+Register (bara 2): 
+46
+
+bara 2 highest index: 261
+
+Register (bara 2): 
+47
+
+bara 2 highest index: 264
+
+Register (bara 2): 
+48
+
+bara 2 highest index: 267
+
+Register (bara 2): 
+49
+
+bara 2 highest index: 270
+
+Register (bara 2): 
+4A
+
+bara 2 highest index: 273
+
+Register (bara 2): 
+4B
+
+bara 2 highest index: 276
+
+Register (bara 2): 
+4C
+
+bara 2 highest index: 279
+
+Register (bara 2): 
+4D
+
+bara 2 highest index: 282
+
+Register (bara 2): 
+4E
+
+bara 2 highest index: 285
+
+Register (bara 2): 
+4F
+
+bara 2 highest index: 288
+
+Reg of block: 
+50
+
+block highest payload index: 294
+
+block data length 4
+
+Reg of block: 
+51
+
+block highest payload index: 300
+
+block data length 4
+
+Reg of block: 
+52
+
+block highest payload index: 306
+
+block data length 4
+
+Reg of block: 
+53
+
+block highest payload index: 312
+
+block data length 4
+
+Reg of block: 
+54
+
+block highest payload index: 318
+
+block data length 4
+
+Reg of block: 
+55
+
+block highest payload index: 323
+
+block data length 3
+
+Reg of block: 
+56
+
+block highest payload index: 328
+
+block data length 3
+
+Reg of block: 
+57
+
+block highest payload index: 578
+
+block data length 248
+
+Register (bara 2): 
+58
+
+bara 2 highest index: 581
+
+Register (bara 2): 
+59
+
+bara 2 highest index: 584
+
+Register (bara 2): 
+5A
+
+bara 2 highest index: 587
+
+Register (bara 2): 
+5B
+
+bara 2 highest index: 590
+
+Register (bara 2): 
+5C
+
+bara 2 highest index: 593
+
+Register (bara 2): 
+5D
+
+bara 2 highest index: 596
+
+Register (bara 2): 
+5E
+
+bara 2 highest index: 599
+
+Register (bara 2): 
+5F
+
+bara 2 highest index: 602
+
+Reg of block: 
+60
+
+block highest payload index: 636
+
+block data length 32
+
+Reg of block: 
+61
+
+block highest payload index: 670
+
+block data length 32
+
+Reg of block: 
+62
+
+block highest payload index: 690
+
+block data length 18
+
+Reg of block: 
+63
+
+block highest payload index: 696
+
+block data length 4
+
+Reg of block: 
+64
+
+block highest payload index: 706
+
+block data length 8
+
+Register (bara 2): 
+65
+
+bara 2 highest index: 709
+
+Register (bara 2): 
+66
+
+bara 2 highest index: 712
+
+Register (bara 2): 
+67
+
+bara 2 highest index: 715
+
+Register (bara 2): 
+68
+
+bara 2 highest index: 718
+
+Register (bara 2): 
+69
+
+bara 2 highest index: 721
+
+Register (bara 2): 
+6A
+
+bara 2 highest index: 724
+
+Register (bara 2): 
+6B
+
+bara 2 highest index: 727
+
+Register (bara 2): 
+6C
+
+bara 2 highest index: 730
+
+************** 
+
+it_reg 109
+
+730
+
+[INFO] Device disconnected (COM5)

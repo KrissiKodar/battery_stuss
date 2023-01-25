@@ -8,6 +8,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Reflection;
+using System.Security.Policy;
 using System.Text;
 using System.Timers;
 using System.Windows.Forms;
@@ -292,13 +293,13 @@ namespace SmartBatteryHack
                 {
                     if (bufferlist.Count < 3) break; // wait for the length bytes
 
-                    int PacketLength = (bufferlist[1] << 8) + bufferlist[2];
-                    int FullPacketLength = PacketLength + 4;
+                    int PacketLength = (bufferlist[1] << 8) + bufferlist[2];  // 377
+                    int FullPacketLength = PacketLength + 4; //381
 
                     if (bufferlist.Count < FullPacketLength) break; // wait for the rest of the bytes to arrive
 
                     byte[] Packet = new byte[FullPacketLength];
-                    int PayloadLength = PacketLength - 2;
+                    int PayloadLength = PacketLength - 2; // 375
                     byte[] Payload = new byte[PayloadLength];
                     int ChecksumLocation = PacketLength + 3;
                     byte DataCode = 0;
@@ -395,7 +396,7 @@ namespace SmartBatteryHack
                                                 });
                                             }
                                             break;
-                                        case 0x03: // smbus register dump
+                                        case 0x03: // smbus register dump   
                                             Util.UpdateTextBox(CommunicationTextBox, "[RX->] SMBus register dump (" + Util.ByteToHexString(Payload, 0, 1) + "-" + Util.ByteToHexString(Payload, 1, 2) + ")", Packet);
                                             if (Payload.Length > 2)
                                             {
@@ -426,6 +427,7 @@ namespace SmartBatteryHack
                                                 const int StateOfHealth2 = 0x77; // baett vid
                                                 const int FilteredCapacity = 0x78; // baett vid
 
+                                                SMBusRegisterDumpList.Clear();
 
                                                 int[] all_block_reads = {ManufacturerName
                                                                             ,DeviceName
@@ -439,7 +441,6 @@ namespace SmartBatteryHack
                                                                             ,ChargingStatus
                                                                             ,GaugingStatus
                                                                             ,ManufacturingStatus
-                                                                            ,LifetimeDataBlock1
                                                                             ,LifetimeDataBlock2
                                                                             ,LifetimeDataBlock3
                                                                             ,LifetimeDataBlock4
@@ -454,63 +455,94 @@ namespace SmartBatteryHack
                                                                             ,StateOfHealth2
                                                                             ,FilteredCapacity };
 
-                                                SMBusRegisterDumpList.Clear();
+                                                //,LifetimeDataBlock1
+                                                List<byte[]> listOfByteArrays = new List<byte[]>();
 
-                                                ushort iterate_reg = 0;
-                                                List<byte> block_list = new List<byte>();
-                                                List<byte> block_lengths = new List<byte>();
-
-
+                                                int iterate_reg = 0;
+                                                
                                                 for (int i = 1; i < (Payload.Length - 2); i++)
                                                 {
+                                                    
                                                     i += 2;
-
-                                                    if ((iterate_reg == 0x20)||(iterate_reg == 0x22))//all_block_reads.Contains(iterate_reg))
+                                                    //Util.UpdateTextBox(CommunicationTextBox, "i: ", new byte[] {(byte)i});
+                                                    if (all_block_reads.Contains(iterate_reg))
                                                     {
+                                                        //Util.UpdateTextBox(CommunicationTextBox, "--------------------------------------- ", null);
+                                                        //Util.UpdateTextBox(CommunicationTextBox, "Reg of block: ", new byte[] { (byte)iterate_reg });
                                                         byte data_len = (byte)(Payload[i]);
+                                                        //Util.UpdateTextBox(CommunicationTextBox, "block data length " + Convert.ToString(data_len), null);
 
-                                                        block_lengths.Add(data_len);
 
+                                                        byte[] data_in = new byte[data_len];
 
-                                                        //i += 1; // utaf lengdar byte, kemur svona: reg, lengd, data -------> lengd taknar lengd af data i bytes
-                                                        
                                                         SMBusRegisterDumpList.Add((ushort)0); // setja bara eitthvad 16 bita gildi
 
-                                                        for (int k= 0; k < data_len; k++)
+                                                        for (int k = 0; k < data_len; k++)
                                                         {
-                                                            block_list.Add(Payload[i + k +1]);
+                                                            //block_list.Add(Payload[i + k + 1]);
+                                                            
+                                                            data_in[k] = Payload[i + k + 1];
                                                         }
 
-                                                        i += data_len -1; // til ad SMBusRegisterDumpList tekur allar 16 bita tolur rett
+                                                        //Util.UpdateTextBox(CommunicationTextBox, "block highest payload index: " + Convert.ToString(i + data_len -1 + 1), null);
+                                                        //Util.UpdateTextBox(CommunicationTextBox, "+ DELTA i: : " + Convert.ToString(1+1+data_len), null);
+                                                        //Util.UpdateTextBox(CommunicationTextBox, "--------------------------------------- ", null);
+                                                        //Util.UpdateTextBox(CommunicationTextBox, "tt: ", data_in);
 
+                                                        listOfByteArrays.Add(data_in);
+
+                                                        
+
+                                                        i += data_len - 1; // til ad SMBusRegisterDumpList tekur allar 16 bita tolur rett
+                                                        
                                                     }
                                                     else
                                                     {
+                                                        byte[] data_in = new byte[2];
+
+                                                        data_in[0] = Payload[i];
+                                                        data_in[1] = Payload[i + 1];
+                                                        //Util.UpdateTextBox(CommunicationTextBox, "Register (bara 2): ", new byte[] { (byte)iterate_reg });
+                                                        //Util.UpdateTextBox(CommunicationTextBox, "bara 2 highest index: " + Convert.ToString(i + 1), null);
+
+                                                        listOfByteArrays.Add(data_in);
                                                         SMBusRegisterDumpList.Add((ushort)((Payload[i] << 8) + Payload[i + 1]));
+                                                        
                                                     }
                                                     iterate_reg += 1;
+                                                    if (iterate_reg > 0x78)
+                                                    {
+                                                        break;
+                                                    }
+
+                                                    //Util.UpdateTextBox(CommunicationTextBox, "CURRENT i:      " + Convert.ToString(i), null);
 
                                                 }
 
+                                                Util.UpdateTextBox(CommunicationTextBox, "************** ", null);
+                                                //for (int i = 0;i < listOfByteArrays.Count; i++)
+                                                //{
+                                                //   Util.UpdateTextBox(CommunicationTextBox, "Reg: ", new byte[] { (byte)i });
+                                                //   Util.UpdateTextBox(CommunicationTextBox, "Content: ", listOfByteArrays[i]);
+                                                //}
+                                                //Util.UpdateTextBox(CommunicationTextBox, "it_reg " + Convert.ToString((int)iterate_reg), null);
+                                                Util.UpdateTextBox(CommunicationTextBox, Convert.ToString((Payload.Length - 2)), null);
+                                                
                                                 byte[] data = new byte[2];
                                                 StringBuilder value = new StringBuilder();
                                                 byte start_reg = Payload[0];
+                                                Util.UpdateTextBox(CommunicationTextBox, "start reg: " + Convert.ToString(start_reg), null);
                                                 byte current_reg = 0;
                                                 
-                                                byte[] data_for_blocks = block_list.ToArray();
-                                                byte[] lengths_for_blocks = block_lengths.ToArray();
-
-
                                                 for (int i = 0; i < SMBusRegisterDumpList.Count; i++)
                                                 {
                                                     data[0] = (byte)(SMBusRegisterDumpList[i] >> 8 & 0xFF);
                                                     data[1] = (byte)(SMBusRegisterDumpList[i] & 0xFF);
                                                     current_reg = (byte)(i + start_reg);
                                                     value.Append("[" + Util.ByteToHexString(new byte[] { current_reg }, 0, 1) + "]: " + Util.ByteToHexString(data, 0, data.Length) + " // ");
-                                                    
-                                                    
-                                                    
-                                                    
+
+
+
                                                     switch (current_reg)
                                                     {
                                                         case 0x00:
@@ -542,7 +574,7 @@ namespace SmartBatteryHack
                                                             value.Append("AtRateOK: " + state);
                                                             break;
                                                         case 0x08:
-                                                            Double Temperature = Math.Round((SMBusRegisterDumpList[i] - 273.15) / 100, 2);
+                                                            Double Temperature = Math.Round(((SMBusRegisterDumpList[i]) * 0.1) - 273.15, 2);
                                                             value.Append("Temperature: " + Temperature + "°C");
                                                             break;
                                                         case 0x09:
@@ -616,21 +648,22 @@ namespace SmartBatteryHack
                                                             value.Append("SerialNumber: " + Util.ByteToHexString(data, 0, data.Length));
                                                             break;
                                                         case 0x20:
-                                                            
+
                                                             //string block_NAMES = Encoding.ASCII.GetString(data_for_blocks, 0, lengths_for_blocks[0]);
                                                             //byte[] data_test1 = new byte[block_list.Count];
                                                             //for(int s = 0; s < block_list.Count; s++)
                                                             //    data_test1[s] = block_list[s];
-                                                            value.Append("ManufacturerName: " + Encoding.ASCII.GetString(data_for_blocks, 0, lengths_for_blocks[0]));
+                                                            value.Append("ManufacturerName: " + Encoding.ASCII.GetString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
                                                         case 0x21:
-                                                            value.Append("DeviceName: " + " ");
+                                                            value.Append("DeviceName: " + Encoding.ASCII.GetString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
                                                         case 0x22:
-                                                            value.Append("DeviceChemistry: " + Encoding.ASCII.GetString(data_for_blocks, lengths_for_blocks[0], lengths_for_blocks[1]));
+                                                            value.Append("DeviceChemistry: " + Encoding.ASCII.GetString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
                                                         case 0x23:
-                                                            value.Append("ManufacturerData: " + " ");
+                                                            int zeroCount = listOfByteArrays[current_reg].Count(x => x == 0);
+                                                            value.Append("ManufacturerData: " + Encoding.ASCII.GetString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length-zeroCount));
                                                             break;
                                                         case 0x3C:
                                                             Double CellVoltage4 = SMBusRegisterDumpList[i] / 1000D;
@@ -658,28 +691,53 @@ namespace SmartBatteryHack
                                                             value.Append("State-of-Health: " + SMBusRegisterDumpList[i].ToString() + "%");
                                                             break;
                                                         case 0x50: //thetta er H4 (32 bit) veit ekki hvort kemur ut rett her!
-                                                            value.Append("Safety Alert: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                            value.Append("Safety Alert: "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][1], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][0], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][3], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][2], 2).PadLeft(8, '0'));
                                                             break;
                                                         case 0x51: //thetta er H4 (32 bit) veit ekki hvort kemur ut rett her!
-                                                            value.Append("Safety Status: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                            value.Append("Safety Status: "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][1], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][0], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][3], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][2], 2).PadLeft(8, '0'));
                                                             break;
                                                         case 0x52: //thetta er H4 (32 bit) veit ekki hvort kemur ut rett her!
-                                                            value.Append("PF Alert: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                            value.Append("PFAlert: "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][1], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][0], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][3], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][2], 2).PadLeft(8, '0'));
                                                             break;
                                                         case 0x53: //thetta er H4 (32 bit) veit ekki hvort kemur ut rett her!
-                                                            value.Append("PF Status: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                            value.Append("PFStatus: "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][1], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][0], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][3], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][2], 2).PadLeft(8, '0'));
                                                             break;
                                                         case 0x54: //thetta er H4 (32 bit) veit ekki hvort kemur ut rett her!
-                                                            value.Append("Operation Status: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                            value.Append("Operation Status: "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][1], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][0], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][3], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][2], 2).PadLeft(8, '0'));
                                                             break;
                                                         case 0x55: //thetta er H4 (32 bit) veit ekki hvort kemur ut rett her!
-                                                            value.Append("Charging Status: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                            value.Append("Charging Status: "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][2], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][1], 2).PadLeft(8, '0'));
                                                             break;
                                                         case 0x56: //thetta er H4 (32 bit) veit ekki hvort kemur ut rett her!
-                                                            value.Append("Gauging Status: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                            value.Append("Gauging Status: "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][0], 2).PadLeft(8, '0'));
                                                             break;
                                                         case 0x57: //thetta er H4 (32 bit) veit ekki hvort kemur ut rett her!
-                                                            value.Append("Manufacturing Status: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                            value.Append("Manufacturing Status: "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][1], 2).PadLeft(8, '0') + " "
+                                                                + Convert.ToString(listOfByteArrays[current_reg][0], 2).PadLeft(8, '0'));
                                                             break;
                                                         case 0x59:
                                                             value.Append("Max Turbo Power: " + SMBusRegisterDumpList[i].ToString() + " cW");
@@ -702,47 +760,48 @@ namespace SmartBatteryHack
                                                         case 0x5F:
                                                             value.Append("Sus Turbo Current: " + SMBusRegisterDumpList[i].ToString() + " mA");
                                                             break;
-                                                        case 0x60: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("LifetimeDataBlock 1: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x60: //
+                                                            //Util.UpdateTextBox(CommunicationTextBox, "!!!!!!!!!!!!!!!!", null);
+                                                            value.Append("LifetimeDataBlock 1 (reads 0 bytes) " + " ");
                                                             break;
-                                                        case 0x61: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("LifetimeDataBlock 1: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x61: //
+                                                            value.Append("LifetimeDataBlock 2: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x62: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("LifetimeDataBlock 1: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x62: //
+                                                            value.Append("LifetimeDataBlock 3: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x63: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("LifetimeDataBlock 1: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x63:
+                                                            value.Append("LifetimeDataBlock 4: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x64: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("LifetimeDataBlock 1: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x64:
+                                                            value.Append("LifetimeDataBlock 5: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x70: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("Manufacturer Info: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x70:
+                                                            value.Append("Manufacturer Info: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x71: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("DA Status 1: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x71: //
+                                                            value.Append("DA Status 1: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x72: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("DA Status 2: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x72: //
+                                                            value.Append("DA Status 2: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x73: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("Gauge Status 1: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x73: //
+                                                            value.Append("Gauge Status 1: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x74: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("Gauge Status 2: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x74: //
+                                                            value.Append("Gauge Status 2: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x75: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("Gauge Status 3: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x75: //
+                                                            value.Append("Gauge Status 3: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x76: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("CB Status: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x76: //
+                                                            value.Append("CB Status: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x77: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("State-of-Health: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x77: //
+                                                            value.Append("State-of-Health: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
-                                                        case 0x78: //thetta er block read, tharf orugglega ad laga
-                                                            value.Append("Filtered Capacity: " + Convert.ToString(SMBusRegisterDumpList[i], 2).PadLeft(16, '0'));
+                                                        case 0x78: //
+                                                            value.Append("Filtered Capacity: " + Util.ByteToHexString(listOfByteArrays[current_reg], 0, listOfByteArrays[current_reg].Length));
                                                             break;
                                                         default:
                                                             value.Append(Util.ByteToHexString(data, 0, data.Length));
@@ -750,12 +809,11 @@ namespace SmartBatteryHack
                                                     }
                                                     if (i != (SMBusRegisterDumpList.Count - 1)) value.Append(Environment.NewLine);
                                                 }
-                                                
+
                                                 Util.UpdateTextBox(CommunicationTextBox, "[INFO] SMBus register dump details (" + Util.ByteToHexString(Payload, 0, 1) + "-" + Util.ByteToHexString(Payload, 1, 2) + "):" + Environment.NewLine + value.ToString(), null);
+
+
                                             }
-                                            break;
-                                        default:
-                                            Util.UpdateTextBox(CommunicationTextBox, "[RX->] Data received", Packet);
                                             break;
                                     }
                                     break;
