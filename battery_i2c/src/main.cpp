@@ -78,7 +78,7 @@
 #define DeviceChemistry             0x22
 #define ManufacturerData            0x23
 
-//#define Authenticated               0x2f // baett vid ??????
+//#define Authenticate               0x2f // baett vid ??????
 
 
 //#define Unknown_38                  0x38 // probably Cellvoltage4
@@ -385,7 +385,7 @@ void scan_smbus_address(void)
     else send_usb_packet(status, sd_scan_smbus_address, err, 1);
 }
 
-bool is_block(int reg)
+bool is_block_4050(int reg)
 {   // ||(reg == LifetimeDataBlock1) 
     if ((reg == ManufacturerName) || (reg == DeviceName) || (reg == DeviceChemistry) || (reg == ManufacturerData) || (reg == SafetyAlert) || (reg == SafetyStatus) 
         || (reg == PFAlert) || (reg == PFStatus) || (reg == OperationStatus) || (reg == ChargingStatus) || (reg == GaugingStatus)|| (reg == ManufacturingStatus) || (reg == LifetimeDataBlock2) 
@@ -396,25 +396,32 @@ bool is_block(int reg)
     else return false;
 }
 
+bool is_block_3060(int reg)
+{   // ||(reg == LifetimeDataBlock1) 
+    if ((reg == ManufacturerName) || (reg == DeviceName) || (reg == DeviceChemistry) || (reg == ManufacturerData)) return true;
+    else return false;
+}
+
 void smbus_reg_dump(void)
 {
 
     uint16_t smbus_reg_dump_payload_length = 3*(smbus_reg_end - smbus_reg_start + 1) + 2;
     
+    // if condition then is_block is is_block_3060
+    // else is_block is is_block_4050
+    bool (*is_block)(int reg);
 
-    /* smbus_reg_dump_payload_length += get_block_length(0x20) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x21) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x22) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x23) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x50) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x51) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x52) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x53) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x54) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x55) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x56) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x57) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
-    smbus_reg_dump_payload_length += get_block_length(0x60) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina */
+    uint8_t check = read_block(0x21, buffer);
+    if (check == 0x06) // if length of device name is 6 then it is 3060
+    {
+        is_block = is_block_3060;
+    }
+    else
+    {
+        is_block = is_block_4050;
+    }
+    
+
     
     for (uint16_t i = smbus_reg_start; i < (smbus_reg_end + 1); i++)
     {

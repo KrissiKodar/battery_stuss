@@ -1,0 +1,227 @@
+[INFO] Connecting to COM6
+
+[<-TX] Handshake request (COM6)
+3D 00 02 01 00 03
+
+[INFO] Device is not responding at COM6
+
+[INFO] Connecting to COM6
+
+[<-TX] Handshake request (COM6)
+3D 00 02 01 00 03
+
+[RX->] Handshake response
+3D 00 08 81 00 53 42 48 41 43 4B 35
+
+[INFO] Handshake OK: SBHACK
+
+[INFO] Device connected (COM6)
+
+[RX->] Device settings
+3D 00 05 83 01 03 00 00 8C
+
+[INFO] Word byte-order: reverse read/write
+
+[INFO] Design voltage: 0.0 V
+
+[<-TX] SMBus register dump request
+3D 00 04 02 03 00 78 81
+
+[RX->] SMBus register dump (00-78)
+3D 02 E0 82 03 00 78 00 01 87 01 01 2C 02 00 0A 03 60 01 04 00 00 05 FF FF 06 FF FF 07 00 01 08 
+0B 2E 09 36 01 0A 00 00 0B 00 00 0C 00 01 0D 00 0B 0E 00 0A 0F 01 3D 10 0C 12 11 FF FF 12 FF FF 
+13 FF FF 14 00 84 15 41 A0 16 00 C0 17 00 00 18 0D 48 19 38 CC 1A 00 31 1B 53 94 1C 00 36 1D 00 
+36 1E 00 36 1F 00 36 20 0A 57 61 6D 74 65 63 68 6E 69 6B 21 09 31 39 33 36 2E 31 42 2D 36 22 04 
+4C 49 4F 4E 23 1C 31 39 33 36 44 31 35 31 32 30 32 31 30 30 35 34 30 30 30 30 31 42 2D 36 44 00 
+00 00 24 31 1C 25 31 1C 26 31 1C 27 31 1C 28 31 1C 29 31 1C 2A 31 1C 2B 31 1C 2C 31 1C 2D 31 1C 
+2E 31 1C 2F 00 14 30 00 1C 31 00 1C 32 00 1C 33 00 1C 34 00 1C 35 00 1C 36 00 1C 37 00 1C 38 00 
+1C 39 00 1C 3A 00 1C 3B 00 1C 3C 0D 81 3D 0D 7D 3E 0D 82 3F 0D 83 40 17 17 41 17 17 42 00 FF 43 
+FF 20 44 00 16 45 00 16 46 00 16 47 00 16 48 00 16 49 00 16 4A 00 96 4B 00 AF 4C 00 AF 4D 00 AF 
+4E 00 AF 4F 00 64 50 04 00 00 00 00 51 04 00 00 00 00 52 04 00 00 00 00 53 04 00 00 00 00 54 04 
+87 01 00 00 55 03 02 02 00 56 03 50 11 00 57 02 F8 01 58 00 15 59 E7 1D 5A E7 BB 5B 00 00 5C 00 
+00 5D 23 28 5E E4 59 5F E5 70 60 00 00 61 08 02 00 04 00 00 00 00 00 62 10 40 02 00 00 00 00 A5 
+00 91 01 07 00 00 00 00 00 63 20 00 00 00 00 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 64 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 03 00 00 00 65 00 20 66 00 20 67 00 20 68 00 20 69 00 20 6A 00 20 6B 
+00 20 6C 00 20 6D 00 20 6E 00 20 6F 00 20 70 1C 31 39 33 36 44 31 35 31 32 30 32 31 30 30 35 34 
+30 30 30 30 31 42 2D 36 44 00 00 00 71 20 82 0D 82 0D 7E 0D 81 0D 5B 36 55 36 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 72 10 31 0B 2E 0B 2B 0B BF 11 BF 11 2E 0B 00 00 2E 0B 
+73 20 3D 01 72 01 D6 0A 1E 0F 12 0C 8E 10 1E 0B 2E 0B E8 03 E8 03 E8 03 E8 03 00 00 00 00 00 00 
+00 00 74 20 00 0E 00 00 00 00 5E 29 09 00 A8 32 A6 32 EE 32 AD 32 FF FF FE FF 1C 00 48 00 B0 00 
+00 00 40 00 75 20 C4 0D E7 0D B8 0D C6 0D 00 00 00 00 00 00 00 00 6E FC C7 0B D3 00 D4 0B E0 32 
+D0 32 40 33 E0 32 76 12 AC 0E 00 00 AB 0E AB 0E 00 40 00 40 00 40 00 40 00 40 77 04 B8 0D 70 13 
+78 08 3D 01 71 01 12 0C 8E 10 00 05 83 01 03 00 02 89 02 34 08 DB 0C 0C FF ED 00 08 00 08 02 80 
+00 07 74 D6
+
+************** 
+
+732
+
+start reg: 0
+
+[INFO] SMBus register dump details (00-78):
+[00]: 01 87 // ManufacturerAccess: 01 87
+[01]: 01 2C // RemainingCapacityAlarm: 300 mAh
+[02]: 00 0A // RemainingTimeAlarm: 10 minutes
+[03]: 60 01 // BatteryMode: 0110000000000001
+[04]: 00 00 // AtRate: 0 minutes
+[05]: FF FF // AtRateTimeToFull: 65535 minutes
+[06]: FF FF // AtRateTimeToEmpty: 65535 minutes
+[07]: 00 01 // AtRateOK: true
+[08]: 0B 2E // Temperature: 13.05°C
+[09]: 36 01 // Voltage: 13.825 V
+[0A]: 00 00 // Current: 0 A
+[0B]: 00 00 // AverageCurrent: 0 A
+[0C]: 00 01 // MaxError: 1%
+[0D]: 00 0B // RelativeStateOfCharge: 11%
+[0E]: 00 0A // AbsoluteStateOfCharge: 10%
+[0F]: 01 3D // RemainingCapacity: 317 mAh
+[10]: 0C 12 // FullChargeCapacity: 3090 mAh
+[11]: FF FF // RunTimeToEmpty: 65535 minutes
+[12]: FF FF // AverageTimeToEmpty: 65535 minutes
+[13]: FF FF // AverageTimeToFull: 65535 minutes
+[14]: 00 84 // ChargingCurrent: 0.132 A
+[15]: 41 A0 // ChargingVoltage: 16.8 V
+[16]: 00 C0 // BatteryStatus: 0000000011000000
+[17]: 00 00 // CycleCount: 0
+[18]: 0D 48 // DesignCapacity: 3400 mAh
+[19]: 38 CC // DesignVoltage: 14.54 V
+[1A]: 00 31 // SpecificationInfo: 0000000000110001
+[1B]: 53 94 // ManufactureDate: 2021.12.20
+[1C]: 00 36 // SerialNumber: 00 36
+[1D]: 00 36 // 00 36
+[1E]: 00 36 // 00 36
+[1F]: 00 36 // 00 36
+[20]: 00 00 // ManufacturerName: Wamtechnik
+[21]: 00 00 // DeviceName: 1936.1B-6
+[22]: 00 00 // DeviceChemistry: LION
+[23]: 00 00 // ManufacturerData: 1936D1512021005400001B-6D
+[24]: 31 1C // 31 1C
+[25]: 31 1C // 31 1C
+[26]: 31 1C // 31 1C
+[27]: 31 1C // 31 1C
+[28]: 31 1C // 31 1C
+[29]: 31 1C // 31 1C
+[2A]: 31 1C // 31 1C
+[2B]: 31 1C // 31 1C
+[2C]: 31 1C // 31 1C
+[2D]: 31 1C // 31 1C
+[2E]: 31 1C // 31 1C
+[2F]: 00 14 // 00 14
+[30]: 00 1C // 00 1C
+[31]: 00 1C // 00 1C
+[32]: 00 1C // 00 1C
+[33]: 00 1C // 00 1C
+[34]: 00 1C // 00 1C
+[35]: 00 1C // 00 1C
+[36]: 00 1C // 00 1C
+[37]: 00 1C // 00 1C
+[38]: 00 1C // 00 1C
+[39]: 00 1C // 00 1C
+[3A]: 00 1C // 00 1C
+[3B]: 00 1C // 00 1C
+[3C]: 0D 81 // Cell voltage 4: 3.457 V
+[3D]: 0D 7D // Cell voltage 3: 3.453 V
+[3E]: 0D 82 // Cell voltage 2: 3.458 V
+[3F]: 0D 83 // Cell voltage 1: 3.459 V
+[40]: 17 17 // 17 17
+[41]: 17 17 // 17 17
+[42]: 00 FF // 00 FF
+[43]: FF 20 // FF 20
+[44]: 00 16 // 00 16
+[45]: 00 16 // 00 16
+[46]: 00 16 // 00 16
+[47]: 00 16 // 00 16
+[48]: 00 16 // 00 16
+[49]: 00 16 // 00 16
+[4A]: 00 96 // BTP discharge set: 150 mAh
+[4B]: 00 AF // BTP charge set: 175 mAh
+[4C]: 00 AF // 00 AF
+[4D]: 00 AF // 00 AF
+[4E]: 00 AF // 00 AF
+[4F]: 00 64 // State-of-Health: 100%
+[50]: 00 00 // Safety Alert: 00000000 00000000 00000000 00000000
+[51]: 00 00 // Safety Status: 00000000 00000000 00000000 00000000
+[52]: 00 00 // PFAlert: 00000000 00000000 00000000 00000000
+[53]: 00 00 // PFStatus: 00000000 00000000 00000000 00000000
+[54]: 00 00 // Operation Status: 00000001 10000111 00000000 00000000
+[55]: 00 00 // Charging Status: 00000000 00000010
+[56]: 00 00 // Gauging Status: 01010000
+[57]: 00 00 // Manufacturing Status: 00000001 11111000
+[58]: 00 15 // 00 15
+[59]: E7 1D // Max Turbo Power: 59165 cW
+[5A]: E7 BB // Sus Turbo Power: 59323 cW
+[5B]: 00 00 // Turbo Pack Resistance: 0 mOhm
+[5C]: 00 00 // Turbo System Resistance: 0 mOhm
+[5D]: 23 28 // Turbo EDV: 9000 mV
+[5E]: E4 59 // Max Turbo Current: 58457 mA
+[5F]: E5 70 // Sus Turbo Current: 58736 mA
+[60]: 00 00 // LifetimeDataBlock 1 (reads 0 bytes)  
+[61]: 00 00 // LifetimeDataBlock 2: 02 00 04 00 00 00 00 00
+[62]: 00 00 // LifetimeDataBlock 3: 40 02 00 00 00 00 A5 00 91 01 07 00 00 00 00 00
+[63]: 00 00 // LifetimeDataBlock 4: 00 00 00 00 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[64]: 00 00 // LifetimeDataBlock 5: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03 00 00 00
+[65]: 00 20 // 00 20
+[66]: 00 20 // 00 20
+[67]: 00 20 // 00 20
+[68]: 00 20 // 00 20
+[69]: 00 20 // 00 20
+[6A]: 00 20 // 00 20
+[6B]: 00 20 // 00 20
+[6C]: 00 20 // 00 20
+[6D]: 00 20 // 00 20
+[6E]: 00 20 // 00 20
+[6F]: 00 20 // 00 20
+[70]: 00 00 // Manufacturer Info: 31 39 33 36 44 31 35 31 32 30 32 31 30 30 35 34 30 30 30 30 31 42 2D 36 44 00 00 00
+[71]: 00 00 // DA Status 1: 82 0D 82 0D 7E 0D 81 0D 5B 36 55 36 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[72]: 00 00 // DA Status 2: 31 0B 2E 0B 2B 0B BF 11 BF 11 2E 0B 00 00 2E 0B
+[73]: 00 00 // Gauge Status 1: 3D 01 72 01 D6 0A 1E 0F 12 0C 8E 10 1E 0B 2E 0B E8 03 E8 03 E8 03 E8 03 00 00 00 00 00 00 00 00
+[74]: 00 00 // Gauge Status 2: 00 0E 00 00 00 00 5E 29 09 00 A8 32 A6 32 EE 32 AD 32 FF FF FE FF 1C 00 48 00 B0 00 00 00 40 00
+[75]: 00 00 // Gauge Status 3: C4 0D E7 0D B8 0D C6 0D 00 00 00 00 00 00 00 00 6E FC C7 0B D3 00 D4 0B E0 32 D0 32 40 33 E0 32
+[76]: 00 00 // CB Status: AC 0E 00 00 AB 0E AB 0E 00 40 00 40 00 40 00 40 00 40
+[77]: 00 00 // State-of-Health: B8 0D 70 13
+[78]: 00 00 // Filtered Capacity: 3D 01 71 01 12 0C 8E 10
+
+[INFO] Device disconnected (COM6)
+
+[INFO] Connecting to COM6
+
+[<-TX] Handshake request (COM6)
+3D 00 02 01 00 03
+
+[INFO] Device is not responding at COM6
+
+[INFO] Connecting to COM6
+
+[<-TX] Handshake request (COM6)
+3D 00 02 01 00 03
+
+[RX->] Handshake response
+3D 00 08 81 00 53 42 48 41 43 4B 35
+
+[INFO] Handshake OK: SBHACK
+
+[INFO] Device connected (COM6)
+
+[RX->] Device settings
+3D 00 05 83 01 03 00 00 8C
+
+[INFO] Word byte-order: reverse read/write
+
+[INFO] Design voltage: 0.0 V
+
+[<-TX] SMBus register dump request
+3D 00 04 02 03 00 78 81
+
+[RX->] SMBus register dump (00-78)
+3D 01 56 82 03 00 78 00 FF FF 01 FF FF 02 FF FF 03 FF FF 04 FF FF 05 FF FF 06 FF FF 07 FF FF 08 
+FF FF 09 FF FF 0A FF FF 0B FF FF 0C FF FF 0D FF FF 0E FF FF 0F FF FF 10 FF FF 11 FF FF 12 FF FF 
+13 FF FF 14 FF FF 15 FF FF 16 FF FF 17 FF FF 18 FF FF 19 FF FF 1A FF FF 1B FF FF 1C FF FF 1D FF 
+FF 1E FF FF 1F FF FF 20 21 22 23 24 FF FF 25 FF FF 26 FF FF 27 FF FF 28 FF FF 29 FF FF 2A FF FF 
+2B FF FF 2C FF FF 2D FF FF 2E FF FF 2F FF FF 30 FF FF 31 FF FF 32 FF FF 33 FF FF 34 FF FF 35 FF 
+FF 36 FF FF 37 FF FF 38 FF FF 39 FF FF 3A FF FF 3B FF FF 3C FF FF 3D FF FF 3E FF FF 3F FF FF 40 
+FF FF 41 FF FF 42 FF FF 43 FF FF 44 FF FF 45 FF FF 46 FF FF 47 FF FF 48 FF FF 49 FF FF 4A FF FF 
+4B FF FF 4C FF FF 4D FF FF 4E FF FF 4F FF FF 50 51 52 53 54 55 56 57 58 FF FF 59 FF FF 5A FF FF 
+5B FF FF 5C FF FF 5D FF FF 5E FF FF 5F FF FF 60 FF FF 61 62 63 64 65 FF FF 66 FF FF 67 FF FF 68 
+FF FF 69 FF FF 6A FF FF 6B FF FF 6C FF FF 6D FF FF 6E FF FF 6F FF FF 70 71 72 73 74 75 76 77 78 
+00 05 83 01 03 00 02 89 02 34 08 DB FF ED FF ED 00 FF 00 08 02 80 00 07 74 FC

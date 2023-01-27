@@ -1,0 +1,96 @@
+[INFO] Connecting to COM6
+
+[<-TX] Handshake request (COM6)
+3D 00 02 01 00 03
+
+[RX->] Handshake response
+3D 00 08 81 00 53 42 48 41 43 4B 35
+
+[INFO] Handshake OK: SBHACK
+
+[INFO] Device connected (COM6)
+
+[RX->] Device settings
+3D 00 05 83 01 03 00 00 8C
+
+[INFO] Word byte-order: reverse read/write
+
+[INFO] Design voltage: 0.0 V
+
+[<-TX] SMBus register dump request
+3D 00 04 02 03 00 78 81
+
+[RX->] Error: not enough MCU RAM
+3D 00 03 8F FD FF 8E
+
+[<-TX] SMBus register dump request
+3D 00 04 02 03 00 20 29
+
+[RX->] SMBus register dump (00-20)
+3D 00 71 82 03 00 20 00 00 14 01 01 2C 02 00 0A 03 60 81 04 00 00 05 FF FF 06 FF FF 07 00 01 08 
+0B 85 09 3B 79 0A 00 00 0B 00 00 0C 00 64 0D 00 04 0E 00 04 0F 00 41 10 07 5F 11 FF FF 12 FF FF 
+13 FF FF 14 04 4C 15 41 A0 16 02 C0 17 00 16 18 07 58 19 39 D0 1A 00 31 1B 4F 4E 1C 22 03 1D 22 
+03 1E 22 03 1F 22 03 20 0A 57 41 4D 54 45 43 48 4E 49 4B 8B F3
+
+************** 
+
+109
+
+start reg: 0
+
+[INFO] SMBus register dump details (00-20):
+[00]: 00 14 // ManufacturerAccess: 00 14
+[01]: 01 2C // RemainingCapacityAlarm: 300 mAh
+[02]: 00 0A // RemainingTimeAlarm: 10 minutes
+[03]: 60 81 // BatteryMode: 0110000010000001
+[04]: 00 00 // AtRate: 0 minutes
+[05]: FF FF // AtRateTimeToFull: 65535 minutes
+[06]: FF FF // AtRateTimeToEmpty: 65535 minutes
+[07]: 00 01 // AtRateOK: true
+[08]: 0B 85 // Temperature: 21.75°C
+[09]: 3B 79 // Voltage: 15.225 V
+[0A]: 00 00 // Current: 0 A
+[0B]: 00 00 // AverageCurrent: 0 A
+[0C]: 00 64 // MaxError: 100%
+[0D]: 00 04 // RelativeStateOfCharge: 4%
+[0E]: 00 04 // AbsoluteStateOfCharge: 4%
+[0F]: 00 41 // RemainingCapacity: 65 mAh
+[10]: 07 5F // FullChargeCapacity: 1887 mAh
+[11]: FF FF // RunTimeToEmpty: 65535 minutes
+[12]: FF FF // AverageTimeToEmpty: 65535 minutes
+[13]: FF FF // AverageTimeToFull: 65535 minutes
+[14]: 04 4C // ChargingCurrent: 1.1 A
+[15]: 41 A0 // ChargingVoltage: 16.8 V
+[16]: 02 C0 // BatteryStatus: 0000001011000000
+[17]: 00 16 // CycleCount: 22
+[18]: 07 58 // DesignCapacity: 1880 mAh
+[19]: 39 D0 // DesignVoltage: 14.8 V
+[1A]: 00 31 // SpecificationInfo: 0000000000110001
+[1B]: 4F 4E // ManufactureDate: 2019.10.14
+[1C]: 22 03 // SerialNumber: 22 03
+[1D]: 22 03 // 22 03
+[1E]: 22 03 // 22 03
+[1F]: 22 03 // 22 03
+[20]: 00 00 // ManufacturerName: WAMTECHNIK
+
+[<-TX] Read block data
+3D 00 03 04 03 21 2B
+
+[RX->] Block data received
+3D 00 0A 84 03 21 06 62 71 33 30 36 30 54
+
+[INFO] Reg.: 21
+       Data: bq3060
+
+[<-TX] SMBus register dump request
+3D 00 04 02 03 40 50 99
+
+[RX->] SMBus register dump (40-50)
+3D 00 37 82 03 40 50 40 17 17 41 17 17 42 00 03 43 03 20 44 17 17 45 00 0D 46 00 06 47 2E 18 48 
+62 06 49 62 06 4A 62 06 4B 62 06 4C 62 06 4D 62 06 4E 62 06 4F 00 64 50 00 8B E4
+
+************** 
+
+51
+
+start reg: 64
