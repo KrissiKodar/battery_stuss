@@ -398,8 +398,14 @@ bool is_block_4050(int reg)
 
 bool is_block_3060(int reg)
 {   // ||(reg == LifetimeDataBlock1) 
-    if ((reg == ManufacturerName) || (reg == DeviceName) || (reg == DeviceChemistry) || (reg == ManufacturerData)) return true;
-    else return false;
+    if ((reg == ManufacturerName) || (reg == DeviceName) || (reg == DeviceChemistry) || (reg == ManufacturerData))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void smbus_reg_dump(void)
@@ -409,16 +415,16 @@ void smbus_reg_dump(void)
     
     // if condition then is_block is is_block_3060
     // else is_block is is_block_4050
-    bool (*is_block)(int reg);
+    bool (*is_block)(int);
 
     uint8_t check = read_block(0x21, buffer);
-    if (check == 0x06) // if length of device name is 6 then it is 3060
+    if ((check-1) == 0x06) // if length of device name is 6 then it is 3060
     {
-        is_block = is_block_3060;
+        is_block = &is_block_3060;
     }
     else
     {
-        is_block = is_block_4050;
+        is_block = &is_block_4050;
     }
     
 

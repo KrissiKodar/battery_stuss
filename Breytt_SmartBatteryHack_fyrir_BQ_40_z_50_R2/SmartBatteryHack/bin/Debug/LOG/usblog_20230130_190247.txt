@@ -1,0 +1,68 @@
+[INFO] Connecting to COM5
+
+[<-TX] Handshake request (COM5)
+3D 00 02 01 00 03
+
+[RX->] Handshake response
+3D 00 08 81 00 53 42 48 41 43 4B 35
+
+[INFO] Handshake OK: SBHACK
+
+[INFO] Device connected (COM5)
+
+[RX->] Device settings
+3D 00 05 83 01 03 00 00 8C
+
+[INFO] Word byte-order: reverse read/write
+
+[INFO] Design voltage: 0.0 V
+
+[<-TX] Read word data
+3D 00 03 04 02 50 59
+
+[RX->] Word data received
+3D 00 05 84 02 50 00 00 DB
+
+[INFO] Reg.: 50
+       Data: 00 00
+
+[<-TX] Read block data
+3D 00 03 04 03 50 5A
+
+[RX->] Block data received
+3D 00 04 84 03 50 00 DB
+
+[<-TX] Read block data
+3D 00 03 04 03 20 2A
+
+[RX->] Block data received
+3D 00 0E 84 03 20 0A 57 41 4D 54 45 43 48 4E 49 4B AA
+
+[INFO] Reg.: 20
+       Data: WAMTECHNIK
+
+[<-TX] Read block data
+3D 00 03 04 03 21 2B
+
+[RX->] Block data received
+3D 00 0A 84 03 21 06 62 71 33 30 36 30 54
+
+[INFO] Reg.: 21
+       Data: bq3060
+
+[<-TX] Read block data
+3D 00 03 04 03 50 5A
+
+[RX->] Block data received
+3D 00 04 84 03 50 00 DB
+
+[<-TX] Read word data
+3D 00 03 04 02 50 59
+
+[RX->] Word data received
+3D 00 05 84 02 50 00 00 DB
+
+[INFO] Reg.: 50
+       Data: 00 00
+
+[INFO] Device disconnected (COM5)
