@@ -66,14 +66,22 @@
             this.MenuStrip = new System.Windows.Forms.MenuStrip();
             this.AboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.DebugGroupBox = new System.Windows.Forms.GroupBox();
+            
+            
+            
             this.ReadROMByBytesCheckBox = new System.Windows.Forms.CheckBox();
             this.ReadROMButton = new System.Windows.Forms.Button();
+
+            this.BQ4050Button = new System.Windows.Forms.Button();
+            this.BQ3060Button = new System.Windows.Forms.Button();
+
             this.ReadROMDescriptionLabel = new System.Windows.Forms.Label();
             this.ControlGroupBox.SuspendLayout();
             this.CommunicationGroupBox.SuspendLayout();
             this.ToolsGroupBox.SuspendLayout();
             this.MenuStrip.SuspendLayout();
             this.DebugGroupBox.SuspendLayout();
+
             this.SuspendLayout();
             // 
             // ControlGroupBox
@@ -317,7 +325,7 @@
             this.SMBusRegisterDumpButton.Name = "SMBusRegisterDumpButton";
             this.SMBusRegisterDumpButton.Size = new System.Drawing.Size(90, 25);
             this.SMBusRegisterDumpButton.TabIndex = 22;
-            this.SMBusRegisterDumpButton.Text = "Dump Registers haha :)";
+            this.SMBusRegisterDumpButton.Text = "test!!!";
             this.SMBusRegisterDumpButton.UseVisualStyleBackColor = true;
             this.SMBusRegisterDumpButton.Click += new System.EventHandler(this.SMBusRegisterDumpButton_Click);
             // 
@@ -495,12 +503,19 @@
             this.DebugGroupBox.Controls.Add(this.ReadROMDescriptionLabel);
             this.DebugGroupBox.Controls.Add(this.ReadROMByBytesCheckBox);
             this.DebugGroupBox.Controls.Add(this.ReadROMButton);
+
+            this.DebugGroupBox.Controls.Add(this.BQ4050Button);
+            this.DebugGroupBox.Controls.Add(this.BQ3060Button);
+
             this.DebugGroupBox.Location = new System.Drawing.Point(390, 298);
             this.DebugGroupBox.Name = "DebugGroupBox";
             this.DebugGroupBox.Size = new System.Drawing.Size(321, 227);
             this.DebugGroupBox.TabIndex = 8;
             this.DebugGroupBox.TabStop = false;
             this.DebugGroupBox.Text = "Debug";
+            // 
+           
+
             // 
             // ReadROMByBytesCheckBox
             // 
@@ -522,6 +537,24 @@
             this.ReadROMButton.UseVisualStyleBackColor = true;
             this.ReadROMButton.Click += new System.EventHandler(this.ReadROMButton_Click);
             // 
+            // BQ4050Button
+            // 
+            this.BQ4050Button.Location = new System.Drawing.Point(8, 100);
+            this.BQ4050Button.Name = "BQ4050Button";
+            this.BQ4050Button.Size = new System.Drawing.Size(75, 23);
+            this.BQ4050Button.TabIndex = 3;
+            this.BQ4050Button.Text = "BQ4050";
+            this.BQ4050Button.UseVisualStyleBackColor = true;
+            this.BQ4050Button.Click += new System.EventHandler(this.BQ4050Button_Click);
+            // BQ3060Button
+            // 
+            this.BQ3060Button.Location = new System.Drawing.Point(158, 100);
+            this.BQ3060Button.Name = "BQ3060Button";
+            this.BQ3060Button.Size = new System.Drawing.Size(75, 23);
+            this.BQ3060Button.TabIndex = 4;
+            this.BQ3060Button.Text = "BQ3060";
+            this.BQ3060Button.UseVisualStyleBackColor = true;
+            this.BQ3060Button.Click += new System.EventHandler(this.BQ3060Button_Click);
             // ReadROMDescriptionLabel
             // 
             this.ReadROMDescriptionLabel.AutoSize = true;
@@ -537,6 +570,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(724, 536);
             this.Controls.Add(this.DebugGroupBox);
+
+
             this.Controls.Add(this.ToolsGroupBox);
             this.Controls.Add(this.ControlGroupBox);
             this.Controls.Add(this.CommunicationGroupBox);
@@ -603,7 +638,11 @@
         private System.Windows.Forms.Label WordByteOrderLabel;
         private System.Windows.Forms.Button WordByteOrderOKButton;
         private System.Windows.Forms.GroupBox DebugGroupBox;
+
+        private System.Windows.Forms.Button BQ4050Button;
+        private System.Windows.Forms.Button BQ3060Button;
         private System.Windows.Forms.Button ReadROMButton;
+
         private System.Windows.Forms.CheckBox ReadROMByBytesCheckBox;
         private System.Windows.Forms.Label ReadROMDescriptionLabel;
     }

@@ -1126,6 +1126,12 @@ namespace SmartBatteryHack
                                                 }
                                             }
                                             break;
+                                        case 0x04: // BQ4050 get
+                                            if (Payload.Length > 2)
+                                            {
+                                                Util.UpdateTextBox(CommunicationTextBox, "[RX->] BQ4050 dump (" + Util.ByteToHexString(Payload, 0, 1) + "-" + Util.ByteToHexString(Payload, 1, 2) + ")", Packet);
+                                            }
+                                            break;
                                     }
                                     break;
                                 case 0x03: // settings
@@ -1679,6 +1685,64 @@ namespace SmartBatteryHack
         }
 
         private void SMBusRegisterDumpButton_Click(object sender, EventArgs e)
+        {
+            List<byte> packet = new List<byte>();
+            byte[] reg = new byte[2];
+            bool error = false;
+
+            try
+            {
+                reg[0] = Util.HexStringToByte(RegStartTextBox.Text)[0];
+                reg[1] = Util.HexStringToByte(RegEndTextBox.Text)[0];
+            }
+            catch
+            {
+                error = true;
+            }
+
+            if (!error)
+            {
+                packet.AddRange(new byte[] { 0x3D, 0x00, 0x04, 0x02, 0x03 });
+                packet.AddRange(reg);
+
+                byte checksum = 0;
+                for (int i = 1; i < packet.Count; i++)
+                {
+                    checksum += packet[i];
+                }
+                packet.Add(checksum);
+
+                byte[] SMBusRegisterDumpRequest = packet.ToArray();
+                Util.UpdateTextBox(CommunicationTextBox, "[<-TX] SMBus register dump request", SMBusRegisterDumpRequest);
+                Serial.Write(SMBusRegisterDumpRequest, 0, SMBusRegisterDumpRequest.Length);
+                SMBusRegisterDumpList.Clear();
+            }
+        }
+        private void BQ4050Button_Click(object sender, EventArgs e)
+        {
+            List<byte> packet = new List<byte>();
+            byte[] reg = new byte[2];
+            bool error = false;
+
+
+            if (!error)
+            {
+                packet.AddRange(new byte[] { 0x3D, 0x00, 0x04, 0x02, 0x04 });
+
+                byte checksum = 0;
+                for (int i = 1; i < packet.Count; i++)
+                {
+                    checksum += packet[i];
+                }
+                packet.Add(checksum);
+
+                byte[] SMBusRegisterDumpRequest = packet.ToArray();
+                Util.UpdateTextBox(CommunicationTextBox, "[<-TX] BQ4050 important dump request", SMBusRegisterDumpRequest);
+                Serial.Write(SMBusRegisterDumpRequest, 0, SMBusRegisterDumpRequest.Length);
+                SMBusRegisterDumpList.Clear();
+            }
+        }
+        private void BQ3060Button_Click(object sender, EventArgs e)
         {
             List<byte> packet = new List<byte>();
             byte[] reg = new byte[2];

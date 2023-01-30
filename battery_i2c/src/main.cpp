@@ -190,6 +190,9 @@
 #define sd_scan_smbus_address   0x02
 #define sd_smbus_reg_dump       0x03
 
+#define read_important_BQ4050_registers   0x04
+#define read_important_BQ3060_registers   0x05
+
 // SUB-DATA CODE byte
 // Command 0x03 (settings)
 #define sd_current_settings     0x01
@@ -472,6 +475,65 @@ void smbus_reg_dump(void)
     }
     
     send_usb_packet(status, sd_smbus_reg_dump, smbus_reg_dump_payload, smbus_reg_dump_payload_length);
+}
+
+void read_imp_BQ4050(void)
+{
+    uint8_t n_registers = 14;
+
+    uint16_t imp_BQ4050_payload_length = 3*(n_registers) + 2;
+    
+    uint8_t readd[n_registers] = {BatteryMode, Voltage, BatteryStatus, CycleCount, CellVoltage4, CellVoltage3, CellVoltage2, CellVoltage1, 
+    SafetyAlert, SafetyStatus, PFAlert, PFStatus, OperationStatus, ChargingStatus}; // ma baetta vid meira
+    
+    for (uint16_t i = 0 ; i < n_registers; i++)
+    {
+        if (is_block_4050(readd[i])) imp_BQ4050_payload_length += get_block_length(readd[i]) - 2 + 1; // add block length -2 fyrir offset + 1 fyrir lengdina
+    }
+
+    uint8_t imp_BQ4050_payload[imp_BQ4050_payload_length]; // max 770 bytes
+    imp_BQ4050_payload[0] = readd[0]; // start register
+    imp_BQ4050_payload[1] = readd[n_registers-1]; // end register
+    uint16_t data = 0;
+    
+    uint16_t position_counter = 0;
+    
+    for (uint16_t i = 0; i < n_registers; i++)
+    {
+        if (is_block_4050(readd[i])) // read and send block
+        {
+            uint8_t block_length = read_block(readd[i], buffer);
+            uint8_t response_length = block_length + 1;
+            uint8_t response[response_length];
+            response[0] = readd[i];
+            
+            for (uint8_t j = 0; j < block_length; j++)
+            {
+                response[1 + j] = buffer[j];
+            }
+            imp_BQ4050_payload[2 + (3*(i-0)) + position_counter] = readd[i]; // register first
+            //imp_BQ4050_payload[3 + (3*(i-0)) + position_counter] = response_length; // length of the block
+            for (uint8_t k = 1; k < response_length; k++)
+            {
+                imp_BQ4050_payload[3 + (3*(i-0)) + position_counter + k - 1] = response[k]; // block data
+            }
+            position_counter += response_length - 3; //
+        }
+        else
+        {
+            data = read_word(readd[i], reverse_read_word_byte_order);
+            imp_BQ4050_payload[2 + (3*(i-0)) + position_counter] = readd[i]; // register first
+            imp_BQ4050_payload[3 + (3*(i-0)) + position_counter] = (data >> 8) & 0xFF; // high byte of the word there
+            imp_BQ4050_payload[4 + (3*(i-0)) + position_counter] = data & 0xFF; // low byte of the word there
+        }
+    }
+    
+    send_usb_packet(status, read_important_BQ4050_registers, imp_BQ4050_payload, imp_BQ4050_payload_length);
+}
+
+void read_imp_BQ3060(void)
+{
+
 }
 
 void read_rom_byte(void)
@@ -834,6 +896,30 @@ void handle_usb_data(void)
                             break;
                         }
                         case sd_smbus_reg_dump: // 0x03 - smbus dump
+                        {
+                            if (!payload_bytes || (payload_length < 2))
+                            {
+                                send_usb_packet(ok_error, error_payload_invalid_values, err, 1);
+                                break;
+                            }
+
+                            smbus_reg_start = cmd_payload[0];
+                            smbus_reg_end = cmd_payload[1];
+                            smbus_reg_dump();
+                            break;
+                        }
+                        case read_important_BQ4050_registers: // 0x04 - read important BQ4050 registers
+                        {
+                            if (!payload_bytes || (payload_length < 2))
+                            {
+                                send_usb_packet(ok_error, error_payload_invalid_values, err, 1);
+                                break;
+                            }
+
+                            read_imp_BQ4050();
+                            break;
+                        }
+                        case read_important_BQ3060_registers: // 0x05 - read BQ4050 registers
                         {
                             if (!payload_bytes || (payload_length < 2))
                             {
