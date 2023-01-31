@@ -1132,6 +1132,12 @@ namespace SmartBatteryHack
                                                 Util.UpdateTextBox(CommunicationTextBox, "[RX->] BQ4050 dump (" + Util.ByteToHexString(Payload, 0, 1) + "-" + Util.ByteToHexString(Payload, 1, 2) + ")", Packet);
                                             }
                                             break;
+                                        case 0x05: // BQ3060 get
+                                            if (Payload.Length > 2)
+                                            {
+                                                Util.UpdateTextBox(CommunicationTextBox, "[RX->] BQ3060 dump (" + Util.ByteToHexString(Payload, 0, 1) + "-" + Util.ByteToHexString(Payload, 1, 2) + ")", Packet);
+                                            }
+                                            break;
                                     }
                                     break;
                                 case 0x03: // settings
@@ -1727,7 +1733,7 @@ namespace SmartBatteryHack
 
             if (!error)
             {
-                packet.AddRange(new byte[] { 0x3D, 0x00, 0x04, 0x02, 0x04 });
+                packet.AddRange(new byte[] { 0x3D, 0x00, 0x02, 0x02, 0x04 });
 
                 byte checksum = 0;
                 for (int i = 1; i < packet.Count; i++)
@@ -1748,20 +1754,10 @@ namespace SmartBatteryHack
             byte[] reg = new byte[2];
             bool error = false;
 
-            try
-            {
-                reg[0] = Util.HexStringToByte(RegStartTextBox.Text)[0];
-                reg[1] = Util.HexStringToByte(RegEndTextBox.Text)[0];
-            }
-            catch
-            {
-                error = true;
-            }
 
             if (!error)
             {
-                packet.AddRange(new byte[] { 0x3D, 0x00, 0x04, 0x02, 0x03 });
-                packet.AddRange(reg);
+                packet.AddRange(new byte[] { 0x3D, 0x00, 0x02, 0x02, 0x05 });
 
                 byte checksum = 0;
                 for (int i = 1; i < packet.Count; i++)
@@ -1771,7 +1767,7 @@ namespace SmartBatteryHack
                 packet.Add(checksum);
 
                 byte[] SMBusRegisterDumpRequest = packet.ToArray();
-                Util.UpdateTextBox(CommunicationTextBox, "[<-TX] SMBus register dump request", SMBusRegisterDumpRequest);
+                Util.UpdateTextBox(CommunicationTextBox, "[<-TX] BQ3060 important dump request", SMBusRegisterDumpRequest);
                 Serial.Write(SMBusRegisterDumpRequest, 0, SMBusRegisterDumpRequest.Length);
                 SMBusRegisterDumpList.Clear();
             }
