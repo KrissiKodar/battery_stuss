@@ -417,7 +417,7 @@ void smbus_reg_dump(void)
     // else is_block is is_block_4050
     bool (*is_block)(int);
 
-    uint8_t check = read_block(0x21, buffer);
+    uint8_t check = get_block_length(0x21);
     if ((check-1) == 0x06) // if length of device name is 6 then it is 3060
     {
         is_block = &is_block_3060;
