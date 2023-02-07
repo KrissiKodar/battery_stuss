@@ -51,11 +51,15 @@ class battery_gauge:
 
     def send_command(self, command):
         # take sum everything except the first byte and add it to the end of the command
-        command.append(sum(command[1:]))
+        command.append(sum(command[1:]) % 256)
         #print("sending command: ", bytes_to_hex(command))
         ser.write(command)
         #wait_and_print()
         return self.wait_and_get_data()
+    
+    def write_block(self, address, data):
+        write_block = [0x3D, 0x00, 0x05, 0x05, 0x03, address, data[1], data[0]] # ath svissast
+        return self.send_command(write_block)
 
     
     def read_word(self, address):
@@ -73,6 +77,7 @@ class battery_gauge:
                 value[2] = self.read_word(value[1])
             elif value[0] == 'block':
                 value[2] = self.read_block(value[1])
+            time.sleep(0.05)
         self.order_bytes(registers)
     
     def order_bytes(self, registers):
@@ -170,7 +175,61 @@ class BQ4050(battery_gauge):
                     'CBStatus':            ['block', 0x76, None, '-', 'flags'],
                     'STH':                 ['block', 0x77, None, '-', 'flags'],
                     'FilteredCapacity':    ['block', 0x78, None, '-', 'flags']}
-   
+        
+        self.DataFlash_PermFail = {'SUV_Threshold':             ['Threshold',       0x49C3, None, 'int16', 'mV'],
+                                   'SUV_Delay':                 ['Delay',           0x49C5, None, 'uint8', 's'],
+                                   'SOV_Threshold':             ['Threshold',       0x49C6, None, 'int16', 'mV'],
+                                   'SOV_Delay':                 ['Delay',           0x49C8, None, 'uint8', 's'],
+                                   'SOCC_Threshold':            ['Threshold',       0x49C9, None, 'int16', 'mA'],
+                                   'SOCC_Delay':                ['Delay',           0x49CB, None, 'uint8', 's'],
+                                   'SOCD_Threshold':            ['Threshold',       0x49CC, None, 'int16', 'mA'],
+                                   'SOCD_Delay':                ['Delay',           0x49CE, None, 'uint8', 's'],
+                                   'SOT_Threshold':             ['Threshold',       0x49CF, None, 'int16', '0.1*K'],
+                                   'SOT_Delay':                 ['Delay',           0x49D1,  None,'uint8', 's'],
+                                   'SOTF_Threshold':            ['Threshold',       0x49D2, None, 'int16', '0.1*K'],
+                                   'SOTF_Delay':                ['Delay',           0x49D4, None, 'uint8', 's'],
+                                   'Open_Thermistor_Threshold': ['Threshold',       0x49D5, None, 'int16', '0.1*K'],
+                                   'Open_Thermistor_Delay':     ['Delay',           0x49D7, None,  'uint8', 's'],
+                                   'Open_Thermistor_Fet_Delta': ['Fet_Delta',       0x49D8, None, 'int16', '0.1*K'],
+                                   'Open_Thermistor_Cell_Delta':['Cell_Delta',      0x49DA,None,  'int16', '0.1*K'],
+                                   'QIM_Delta_Threshold':       ['Delta_Threshold', 0x49DC,None,  'int16', '0.1%'],
+                                   'QIM_Delay':                 ['Delay',           0x49DE,None,  'uint8', 'updates'],
+                                   'CB_Max_Threshold':          ['Max_Threshold',   0x49DF,None,  'int16', '2 h'],
+                                   'CB_Delta_Threshold':        ['Delta_Threshold', 0x49E1,None,  'uint8', '2 h'],
+                                   'CB_Delay':                  ['Delay',           0x49E2, None, 'uint8', 'cycles'],
+                                   'VIMR_Check_Voltage':        ['Check_Voltage',   0x49E3, None, 'int16', 'mV'],
+                                   'VIMR_Check_Current':        ['Check_Current',   0x49E5, None, 'int16', 'mA'],
+                                   'VIMR_Delta_Threshold':      ['Delta_Threshold', 0x49E7,None,  'int16', 'mV'],
+                                   'VIMR_Delta_Delay':          ['Delta_Delay',     0x49E9, None, 'uint8', 's'],
+                                   'VIMR_Duration':             ['Duration',        0x49EA, None, 'uint16', 's'],
+                                   'VIMA_Check_Voltage':        ['Check_Voltage',   0x49EC, None, 'int16', 'mV'],
+                                   'VIMA_Check_Current':        ['Check_Current',   0x49EE, None, 'int16', 'mA'],
+                                   'VIMA_Delta_Threshold':      ['Delta_Threshold', 0x49F0, None, 'int16', 'mV'],
+                                   'VIMA_Delay':                ['Delay',           0x49F2, None, 'uint8', 's'],
+                                   'IMP_Delta_Threshold':       ['Delta_Threshold', 0x49F3,None,  'int16', '%'],
+                                   'IMP_Max_Threshold':         ['Max_Threshold',   0x49F5, None, 'int16', '%'],
+                                   'IMP_Ra_Update_Counts':      ['Ra_Update_Counts',0x49F7, None, 'uint8', 'counts'],
+                                   'CD_Threshold':              ['Threshold',       0x49F8,None,  'int16', 'mAh'],
+                                   'CD_Delay':                  ['Delay',           0x49FA, None, 'uint8', 'cycles'],
+                                   'CFET_OFF_Threshold':        ['OFF_Threshold',   0x49FB,None,  'int16', 'mA'],
+                                   'CFET_OFF_Delay':            ['OFF_Delay',       0x49FD, None, 'uint8', 's'],
+                                   'DFET_OFF_Threshold':        ['OFF_Threshold',   0x49FE, None,  'int16', 'mA'],
+                                   'DFET_OFF_Delay':            ['OFF_Delay',       0x4A00, None,  'uint8', 's'],
+                                   'FUSE_Threshold':            ['Threshold',       0x4A01, None,  'int16', 'mA'],
+                                   'FUSE_Delay':                ['Delay',           0x4A03, None, 'uint8', 's'],
+                                   'AFER_Threshold':            ['Threshold',       0x4A04, None,  'uint8', 's'],
+                                   'AFER_Delay_Period':         ['Delay_Period',    0x4A05, None, 'uint8', 's'],
+                                   'AFER_Compare_Period':       ['Compare_Period',  0x4A06, None, 'uint8', 's'],
+                                   'AFEC_Threshold':            ['Threshold',       0x4A07, None, 'uint8', 's'],
+                                   'AFEC_Delay_Period':         ['Delay_Period',    0x4A08, None, 'uint8', 's'],
+                                   '2LVL':                      ['Delay',           0x4A09, None, 'uint8', 's']}
+
+    def to_signed_int(self, bytes):
+        num = int(bytes[1] + bytes[0], 16)
+        if num >= 2**15:
+            num -= 2**16
+        return num               
+                                    
     # print values in reg_dict
     # like this: register name (key): value[2] (value) value[-1] (unit)
     def print_values(self):
@@ -187,8 +246,54 @@ class BQ4050(battery_gauge):
                 else:
                     print(f'{key}: {value[2]} {value[-1]}')
     
+    def print_PF_dataflash_values(self):
+        for key, value in self.DataFlash_PermFail.items():
+            if value[-2] == 'uint16' or value[-2] == 'int16':
+                if value[-2] == 'int16':
+                    # then the value is siged in 2's complement, so convert it to int
+                    print(f'{key}: {self.to_signed_int(value[2])} {value[-1]}')
+                else:
+                    print(f'{key}: {int(value[2][1]+value[2][0],16)} {value[-1]}')
+            else:
+                # inside value[2] is just a list with a single value for example: ['0x0A']
+                # convert it to int and print
+                print(f'{key}: {int("00"+value[2],16)} {value[-1]}')
+    
     def read_from_battery(self):
         super().read_SBS_from_battery(self.reg_dict)
+
+    def read_Permanent_Fail_Dataflash(self):
+        super().write_block(0x44, [0x49, 0xC3])
+        time.sleep(0.1)
+        # read 1st block
+        # DC = Datachunk
+        DC1 = super().read_block(0x44)
+        # remove first 3 bytes
+        DC1 = DC1[3:]
+        time.sleep(0.1)
+        # read 2nd block
+        DC2 = super().read_block(0x44)
+        # remove first 3 bytes
+        DC2 = DC2[3:]
+        time.sleep(0.1)
+        # read 3rd block
+        DC3 = super().read_block(0x44)
+        # remove first 3 bytes
+        DC3 = DC3[3:]
+        # now only take first 6 bytes of DC3
+        DC3 = DC3[:7]
+        # combine all 3 blocks
+        DC = DC1 + DC2 + DC3
+        # Add the data from DC to the value in index 2 of the dataflash_permFail dict
+        for key, value in self.DataFlash_PermFail.items():
+            # if value[-2] is uinnt16 or int16, then take 2 bytes from DC
+            # else take 1 byte from DC
+            index = value[1]-0x49C3
+            if value[-2] == 'uint16' or value[-2] == 'int16':
+                value[2] = DC[index:index+2]
+            else:
+                value[2] = DC[index]
+
 
 class BQ3060(battery_gauge):
 # init function
@@ -293,10 +398,10 @@ class BQ3060(battery_gauge):
 
 
 current_battery= BQ4050()
-current_battery.read_from_battery()
-current_battery.print_values()
+#current_battery.read_from_battery()
+#current_battery.print_values()
 
+current_battery.read_Permanent_Fail_Dataflash()
+#current_battery.print_PF_dataflash_values()
+print(current_battery.DataFlash_PermFail)
 
-print(current_battery.read_block(0x57))
-
-#print(current_battery.reg_dict)
