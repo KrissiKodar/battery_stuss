@@ -1,6 +1,7 @@
 import serial
 from serial.tools import list_ports
 from serial import Serial
+import sys
 import time
 port = list(list_ports.comports())
 print(port)
@@ -56,6 +57,10 @@ class battery_gauge:
         ser.write(command)
         #wait_and_print()
         return self.wait_and_get_data()
+
+    def write_word(self, address, data):
+        # write 2 bytes to the given address
+        write_word = [0x3D, 0x00, 0x05, 0x05, 0x02, address, data[1], data[0]]
     
     def write_block(self, address, data):
         write_block = [0x3D, 0x00, 0x05, 0x05, 0x03, address, data[1], data[0]] # ath svissast
@@ -365,6 +370,35 @@ class BQ3060(battery_gauge):
                     'DataFlashSubClassPage6': ['block', 0x7D, None, 'H32', 'flags'],
                     'DataFlashSubClassPage7': ['block', 0x7E, None, 'H32', 'flags'],
                     'DataFlashSubClassPage8': ['block', 0x7F, None, 'H32', 'flags']}
+    
+        self.first_level_safety_dict = {'LT COV Threshold':     ['Voltage', 'I2', None, 'mV'], 
+                                      'LT COV Recovery':        ['Voltage', 'I2', None, 'mV'], 
+                                      'ST COV Threshold':       ['Voltage', 'I2', None, 'mV'], 
+                                      'ST COV Recovery':        ['Voltage', 'I2', None, 'mV'], 
+                                      'HT COV Threshold':       ['Voltage', 'I2', None, 'mV'], 
+                                      'HT COV Recovery':        ['Voltage', 'I2', None, 'mV'], 
+                                      'CUV Threshold':          ['Voltage', 'I2', None, 'mV'], 
+                                      'CUV Recovery':           ['Voltage', 'I2', None, 'mV'], 
+                                      'OC (1st Tier) Chg':      ['Current', 'I2', None, 'mA'],
+                                      'OC (1st Tier) Chg Time': ['Current', 'U1', None, 's'], 
+                                      'OC Chg Recovery':        ['Current', 'I2', None, 'mA'], 
+                                      'OC (1st Tier) Dsg':      ['Current', 'I2', None, 'mA'], 
+                                      'OC (1st Tier) Dsg Time': ['Current', 'U1', None, 's'], 
+                                      'OC Dsg Recovery':        ['Current', 'I2', None, 'mA'], 
+                                      'Current Recovery Time':  ['Current', 'U1', None, 's'], 
+                                      'AFE OC Dsg':             ['Current', 'H1', None, None],
+                                      'AFE OC Dsg Time':        ['Current', 'H1', None, None], 
+                                      'AFE OC Dsg Recovery':    ['Current', 'I2', None, 'mA'],
+                                      'AFE SC Chg Cfg':         ['Current', 'H1', None, None], 
+                                      'AFE SC Dsg Cfg':         ['Current', 'H1', None, None], 
+                                      'AFE SC Recovery':        ['Current', 'I2', None, 'mA'],
+                                      'Over Temp Chg':          ['Temperature', 'I2',None,  '0.1°C'], 
+                                      'OT Chg Time':            ['Temperature', 'U1',None,  's'],
+                                      'OT Chg Recovery':        ['Temperature', 'I2',None,  '0.1°C'], 
+                                      'Over Temp Dsg':          ['Temperature', 'I2',None,  '0.1°C'],
+                                      'OT Dsg Time':            ['Temperature', 'U1',None,  's'],
+                                      'OT Dsg Recovery':        ['Temperature', 'I2',None,  '0.1°C']}
+
     # print values in reg_dict
     # like this: register name (key): value[2] (value) value[-1] (unit)
     def print_values(self):
@@ -396,12 +430,54 @@ class BQ3060(battery_gauge):
     def read_from_battery(self):
         super().read_SBS_from_battery(self.reg_dict)
 
+    def read_1st_level_safety(self):
+        super().write_word(0x77, [0x00, 0x00])
+        time.sleep(0.1)
+        # read 1st block
+        # DC = Datachunk
+        DC1 = super().read_block(0x78)
+        # remove first 3 bytes
+        DC1 = DC1[3:]
+        time.sleep(0.1)
+        # read 2nd block
+        DC2 = super().read_block(0x79)
+        # remove first 3 bytes
+        DC2 = DC2[3:]
+        # now only take first 13 bytes of DC2
+        DC2 = DC2[:14]
+        # combine all 3 blocks
+        DC = DC1 + DC2
+        # Add the data from DC to the value in index 2 of the dataflash_permFail dict
+        i = 0
+        for key, value in self.first_level_safety_dict.items():
+            if value[1] == 'I2':
+                value[2] = DC[i:i+2]
+                i += 2
+            else:
+                value[2] = DC[i]
+                i += 1
 
-current_battery= BQ4050()
-#current_battery.read_from_battery()
-#current_battery.print_values()
 
-current_battery.read_Permanent_Fail_Dataflash()
-#current_battery.print_PF_dataflash_values()
-print(current_battery.DataFlash_PermFail)
+
+# total arguments
+n = len(sys.argv)
+print("Total arguments passed:", n)
+ 
+# Arguments passed
+print("\nName of Python script:", sys.argv[0])
+
+
+
+if len(sys.argv) > 1:
+    if sys.argv[1] == "BQ4050":
+        current_battery= BQ4050()
+        if sys.argv[2] == "0":
+            current_battery.read_from_battery()
+            current_battery.print_values()
+        elif sys.argv[2] == "1":
+            current_battery.read_Permanent_Fail_Dataflash()
+            current_battery.print_PF_dataflash_values() 
+    if sys.argv[1] == "BQ3060":
+        current_battery= BQ3060()
+    #print(current_battery.DataFlash_PermFail)
 
