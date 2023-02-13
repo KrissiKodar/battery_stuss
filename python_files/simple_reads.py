@@ -61,6 +61,7 @@ class battery_gauge:
     def write_word(self, address, data):
         # write 2 bytes to the given address
         write_word = [0x3D, 0x00, 0x05, 0x05, 0x02, address, data[1], data[0]]
+        return self.send_command(write_word)
     
     def write_block(self, address, data):
         write_block = [0x3D, 0x00, 0x05, 0x05, 0x03, address, data[1], data[0]] # ath svissast
@@ -251,18 +252,7 @@ class BQ4050(battery_gauge):
                 else:
                     print(f'{key}: {value[2]} {value[-1]}')
     
-    def print_PF_dataflash_values(self):
-        for key, value in self.DataFlash_PermFail.items():
-            if value[-2] == 'uint16' or value[-2] == 'int16':
-                if value[-2] == 'int16':
-                    # then the value is siged in 2's complement, so convert it to int
-                    print(f'{key}: {self.to_signed_int(value[2])} {value[-1]}')
-                else:
-                    print(f'{key}: {int(value[2][1]+value[2][0],16)} {value[-1]}')
-            else:
-                # inside value[2] is just a list with a single value for example: ['0x0A']
-                # convert it to int and print
-                print(f'{key}: {int("00"+value[2],16)} {value[-1]}')
+    
     
     def read_from_battery(self):
         super().read_SBS_from_battery(self.reg_dict)
@@ -298,6 +288,19 @@ class BQ4050(battery_gauge):
                 value[2] = DC[index:index+2]
             else:
                 value[2] = DC[index]
+
+    def print_PF_dataflash_values(self):
+        for key, value in self.DataFlash_PermFail.items():
+            if value[-2] == 'uint16' or value[-2] == 'int16':
+                if value[-2] == 'int16':
+                    # then the value is siged in 2's complement, so convert it to int
+                    print(f'{key}: {self.to_signed_int(value[2])} {value[-1]}')
+                else:
+                    print(f'{key}: {int(value[2][1]+value[2][0],16)} {value[-1]}')
+            else:
+                # inside value[2] is just a list with a single value for example: ['0x0A']
+                # convert it to int and print
+                print(f'{key}: {int("00"+value[2],16)} {value[-1]}')
 
 
 class BQ3060(battery_gauge):
@@ -399,6 +402,11 @@ class BQ3060(battery_gauge):
                                       'OT Dsg Time':            ['Temperature', 'U1',None,  's'],
                                       'OT Dsg Recovery':        ['Temperature', 'I2',None,  '0.1°C']}
 
+    def to_signed_int(self, bytes):
+        num = int(bytes[1] + bytes[0], 16)
+        if num >= 2**15:
+            num -= 2**16
+        return num    
     # print values in reg_dict
     # like this: register name (key): value[2] (value) value[-1] (unit)
     def print_values(self):
@@ -431,24 +439,47 @@ class BQ3060(battery_gauge):
         super().read_SBS_from_battery(self.reg_dict)
 
     def read_1st_level_safety(self):
+
+        time.sleep(0.1)
         super().write_word(0x77, [0x00, 0x00])
         time.sleep(0.1)
+
         # read 1st block
         # DC = Datachunk
-        DC1 = super().read_block(0x78)
-        # remove first 3 bytes
-        DC1 = DC1[3:]
+
         time.sleep(0.1)
+        DC1 = super().read_block(0x78)
+        time.sleep(0.1)
+        # remove first 1 bytes
+        print("DC1: ", DC1)
+        DC1 = DC1[1:]
+
+        time.sleep(0.1)
+        super().write_word(0x77, [0x01, 0x00])
+        time.sleep(0.1)
+
         # read 2nd block
-        DC2 = super().read_block(0x79)
-        # remove first 3 bytes
-        DC2 = DC2[3:]
-        # now only take first 13 bytes of DC2
-        DC2 = DC2[:14]
-        # combine all 3 blocks
-        DC = DC1 + DC2
+        time.sleep(0.1)
+        DC2 = super().read_block(0x78)
+        time.sleep(0.1)
+
+        print("DC2: ", DC2)
+        DC2 = DC2[1:]
+
+        time.sleep(0.1)
+        super().write_word(0x77, [0x02, 0x00])
+        time.sleep(0.1)
+
+        # read 3rd block
+        time.sleep(0.1)
+        DC3 = super().read_block(0x78)
+        print("DC3: ", DC3)
+        DC3 = DC3[1:]
+        DC = DC1 + DC2 + DC3
         # Add the data from DC to the value in index 2 of the dataflash_permFail dict
         i = 0
+        print("DC: ", DC)
+        print("len(DC): ", len(DC))
         for key, value in self.first_level_safety_dict.items():
             if value[1] == 'I2':
                 value[2] = DC[i:i+2]
@@ -456,6 +487,15 @@ class BQ3060(battery_gauge):
             else:
                 value[2] = DC[i]
                 i += 1
+    
+    def print_1st_level_safety_dataflash_value(self):
+        for key, value in  self.first_level_safety_dict.items():
+            if value[1] == 'I2':
+                print(f'{key}: {self.to_signed_int(value[2])} {value[-1]}')
+            else:
+                # inside value[2] is just a list with a single value for example: ['0x0A']
+                # convert it to int and print
+                print(f'{key}: {int("00"+value[2],16)} {value[-1]}')
 
 
 
@@ -479,5 +519,14 @@ if len(sys.argv) > 1:
             current_battery.print_PF_dataflash_values() 
     if sys.argv[1] == "BQ3060":
         current_battery= BQ3060()
+        time.sleep(0.1)
+        if sys.argv[2] == "0":
+            current_battery.read_from_battery()
+            current_battery.print_values()
+        elif sys.argv[2] == "1":
+            current_battery.read_1st_level_safety()
+            current_battery.print_1st_level_safety_dataflash_value()
+
+
     #print(current_battery.DataFlash_PermFail)
 
