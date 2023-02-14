@@ -1,13 +1,16 @@
 
 
-b=[2,2,2,2,2,2,1,2,2,2,2,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,4,4,4,4,4,4,4,4]
+def to_signed_int(bytes):
+        num = int(bytes[0] + bytes[1], 16)
+        if num >= 2**15:
+            num -= 2**16
+        return num
 
+# same as bytes to hex but put them in a list
+def bytes_to_hex_list(data):
+    return [hex(b)[2:].zfill(2) for b in data]
 
-all_reg= [0x01 ,0x02 ,0x03 ,0x04 ,0x05 ,0x06 ,0x07 ,0x08 ,0x09 ,0x0A ,0x0B ,0x0C ,0x0D ,0x0E ,0x0F ,0x10,
-          0x11 ,0x12 ,0x13 ,0x14 ,0x15 ,0x16 ,0x17 ,0x18 ,0x19 ,0x1A ,0x1B ,0x1C,
-          0x3C ,0x3D ,0x3E ,0x3F ,0x4A ,0x4B ,0x4F ,0x50 ,0x51 ,0x52 ,0x53 ,0x54 ,0x55 ,0x56 ,0x57]
+ascii_list = ['00', '01', '00', '00', '0a', '57', '41', '4d', '54', '45', '43', '48', '4e', '49', '4b', '41', '42', '43', '44', '45', '46', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '41']
 
-print(len(b))
-print(sum(b))
-print()
-print(len(all_reg))
+string_from_reg = ''.join(chr(int(i, 16)) for i in ascii_list)
+print(string_from_reg)

@@ -3,14 +3,18 @@ from serial.tools import list_ports
 from serial import Serial
 import sys
 import time
+import pickle
+import struct
+
 port = list(list_ports.comports())
 print(port)
 for p in port:
     print(p.device)
 
 BAUD = 250000
-# serial port is at /dev/ttyUSB0
-ser = Serial('/dev/ttyUSB0', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+# serial port is at /dev/ttyUSB0 (a linux velinni minni)
+#ser = Serial('/dev/ttyUSB0', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+ser = Serial('COM6', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
     
 
 class battery_gauge:
@@ -39,6 +43,7 @@ class battery_gauge:
 
     def wait_and_get_data(self):
         while True:
+            time.sleep(0.1)
             if ser.in_waiting > 0:
                 #print(f'read {ser.in_waiting} bytes')
                 data = ser.read(ser.in_waiting)
@@ -83,7 +88,6 @@ class battery_gauge:
                 value[2] = self.read_word(value[1])
             elif value[0] == 'block':
                 value[2] = self.read_block(value[1])
-            time.sleep(0.05)
         self.order_bytes(registers)
     
     def order_bytes(self, registers):
@@ -104,8 +108,6 @@ class battery_gauge:
                             value[2][-2:] = value[2][-1], value[2][-2]
                             # reverse the first 2 indexes of the list
                             value[2][:2] = value[2][1], value[2][0]
-
-
 
 
 class BQ4050(battery_gauge):
@@ -305,8 +307,13 @@ class BQ4050(battery_gauge):
 
 class BQ3060(battery_gauge):
 # init function
-    def __init__(self):
+    def __init__(self, data_dict = None):
         super().__init__()
+
+        # fyrir dataflash
+        #dict={ 'NAME': ['SUBCLASS', 'DATA\rTYPE', None, 'UNIT']}
+        self.data_dict = data_dict
+
         self.reg_dict = { 'RemainingCapacityAlarm': ['word', 0x01, None, 'uint16', 'mAh'],
                     'RemainingTimeAlarm':     ['word', 0x02, None, 'uint16', 'min'],
                     'BatteryMode':            ['word', 0x03, None, 'uint16', 'flags'],
@@ -362,8 +369,8 @@ class BQ3060(battery_gauge):
                     'Authenkey1':             ['block', 0x65, None, 'uint32', 'flags'],
                     'AuthenKey0':             ['block', 0x66, None, 'uint32', 'flags'],
                     'ManufacturerInfo':       ['block', 0x70, None, 'string', 'flags'],
-                    'SenseResistor':          ['block', 0x71, None, 'uint16', 'flags'],
-                    'TempRange':              ['block', 0x72, None, 'uint16', 'flags'],
+                    'SenseResistor':          ['word',  0x71, None, 'uint16', 'microOhm'],
+                    'TempRange':              ['word',  0x72, None, 'uint16', 'flags'],
                     'DataFlashSubClassISize': ['block', 0x77, None, 'uint16', 'flags'],
                     'DataFlashSubClassPage1': ['block', 0x78, None, 'H32', 'flags'],
                     'DataFlashSubClassPage2': ['block', 0x79, None, 'H32', 'flags'],
@@ -402,22 +409,30 @@ class BQ3060(battery_gauge):
                                       'OT Dsg Time':            ['Temperature', 'U1',None,  's'],
                                       'OT Dsg Recovery':        ['Temperature', 'I2',None,  '0.1°C']}
 
+
     def to_signed_int(self, bytes):
         num = int(bytes[1] + bytes[0], 16)
         if num >= 2**15:
             num -= 2**16
-        return num    
-    # print values in reg_dict
-    # like this: register name (key): value[2] (value) value[-1] (unit)
-    def print_values(self):
-        for key, value in self.reg_dict.items():
-            if value[0] == 'word':
-                if value[-1] == 'flags':
-                    print(f'{key}: {value[2]} {value[-1]}')
-                else:
-                    print(f'{key}: {int(value[2][0]+value[2][1],16)} {value[-1]}')
-            else:
-                print(f'{key}: {value[2]} {value[-1]}')
+        return num
+
+    def to_unsigned_int(self, bytes):
+        return int(bytes[1] + bytes[0], 16)
+
+
+    def to_signed_int_dataflash(self, bytes):
+        num = int(bytes[0] + bytes[1], 16)
+        if num >= 2**15:
+            num -= 2**16
+        return num
+
+    def to_unsigned_int_dataflash(self, bytes):
+        return int(bytes[0] + bytes[1], 16)
+    
+    # 4 bytes to float
+    #def to_float(self, bytes):
+    #    return struct.unpack('f', bytes.fromhex(bytes))[0]
+        
     
     # print values in reg_dict
     # like this: register name (key): value[2] (value) value[-1] (unit)
@@ -440,38 +455,39 @@ class BQ3060(battery_gauge):
 
     def read_1st_level_safety(self):
 
-        time.sleep(0.1)
+        DELAY = 0.02
+        time.sleep(DELAY)
         super().write_word(0x77, [0x00, 0x00])
-        time.sleep(0.1)
+        time.sleep(DELAY)
 
         # read 1st block
         # DC = Datachunk
 
-        time.sleep(0.1)
+        time.sleep(DELAY)
         DC1 = super().read_block(0x78)
-        time.sleep(0.1)
+        time.sleep(DELAY)
         # remove first 1 bytes
         print("DC1: ", DC1)
         DC1 = DC1[1:]
 
-        time.sleep(0.1)
+        time.sleep(DELAY)
         super().write_word(0x77, [0x01, 0x00])
-        time.sleep(0.1)
+        time.sleep(DELAY)
 
         # read 2nd block
-        time.sleep(0.1)
+        time.sleep(DELAY)
         DC2 = super().read_block(0x78)
-        time.sleep(0.1)
+        time.sleep(DELAY)
 
         print("DC2: ", DC2)
         DC2 = DC2[1:]
 
-        time.sleep(0.1)
+        time.sleep(DELAY)
         super().write_word(0x77, [0x02, 0x00])
-        time.sleep(0.1)
+        time.sleep(DELAY)
 
         # read 3rd block
-        time.sleep(0.1)
+        time.sleep(DELAY)
         DC3 = super().read_block(0x78)
         print("DC3: ", DC3)
         DC3 = DC3[1:]
@@ -498,6 +514,101 @@ class BQ3060(battery_gauge):
                 print(f'{key}: {int("00"+value[2],16)} {value[-1]}')
 
 
+    def read_all_dataflash(self):
+
+        subclass_ID = [0,1,2,16,17,18,19,20,32,33,34,36,37,38,48,49,56,58,59,64,65,68,85,81,82,96,97,104,105,106,107]
+        # subclass_IDs: 34 --> 38 bytes
+        # subclass_IDs: 48 --> 55 bytes
+        # subclass_IDs: 85 --> 48 bytes
+        # subclass_IDs: 96 --> 32 bytes (sleppur held eg)
+        # subclass_IDs: 106 --> 38 bytes
+        two_reads = [34,48,85,106]
+
+        # subclass ID: number of bytes according to the datasheet for BQ3060
+        bugs = {82: 10, 107: 3, 59: 8, 65: 1}
+
+        DC = []
+        DELAY = 0.02
+
+        for i in subclass_ID:
+            time.sleep(DELAY)
+            super().write_word(0x77, [i, 0x00])
+            time.sleep(DELAY)
+
+            time.sleep(DELAY)
+            DC1 = super().read_block(0x78)
+            time.sleep(DELAY)
+            # remove first 1 bytes
+            DC1 = DC1[1:]
+            # if i is a key in bugs, remove the last bytes
+            if i in bugs:
+                DC1 = DC1[0:bugs[i]]
+            
+            print(f"subclass ID: {i} first, length = {len(DC1)}", DC1)
+            DC.extend(DC1)
+
+
+            if i in two_reads:
+                time.sleep(DELAY)
+                DC2 = super().read_block(0x79)
+                time.sleep(DELAY)
+                DC2 = DC2[1:]
+                print(f"subclass ID: {i} second, length = {len(DC2)}", DC2)
+                DC.extend(DC2)
+        # Add the data from DC to the value in index 2 of the dataflash_permFail dict
+        i = 0
+        print("DC: ", DC)
+        print("len(DC): ", len(DC))
+        try:
+            for key, value in self.data_dict.items():
+                if value[1] in ['I2', 'U2', 'H2']:
+                    value[2] = DC[i:i+2]
+                    i += 2
+                elif value[1] in ['S5', 'S8']:
+                    value[2] = DC[i:i+int(value[1][1])]
+                    i += int(value[1][1])
+                    #print("String in question: ", value[2])
+                elif value[1] in ['S12', 'S32']:
+                    value[2] = DC[i:i+int(value[1][1:3])]
+                    #print("String in question: ", value[2])
+                    i += int(value[1][1:3])
+                elif value[1] in ['F4']:
+                    value[2] = DC[i:i+4]
+                    i += 4
+                else:
+                    value[2] = DC[i]
+                    i += 1
+        except IndexError:
+            print("IndexError")
+            print("i: ", i)
+            print("key: ", key)
+
+    def print_dataflash_values(self):
+        print(self.data_dict)
+        i = 0
+        for key, value in  self.data_dict.items():
+            if value[1] == 'I2':
+                print(f'{key}: {self.to_signed_int_dataflash(value[2])} {value[-1]}')
+                i += 1
+            elif value[1] == 'U2':
+                print(f'{key}: {self.to_unsigned_int_dataflash(value[2])} {value[-1]}')
+            elif value[1] == 'H2' or value[1] == 'H1':
+                print(f'{key}: {value[2]} {value[-1]}')
+            elif value[1] in ['S5', 'S8', 'S12', 'S32']:
+                print(value[2])
+                string_from_reg = ''.join(chr(int(i, 16)) for i in value[2])
+                print(f'{key}: {string_from_reg}')
+            elif value[1] == 'F4':
+                #print(f'{key}: {self.to_float(value[2])} {value[-1]}')
+                print(f'{key}: {value[2]} {value[-1]}')
+            else:
+                # inside value[2] is just a list with a single value for example: ['0x0A']
+                # convert it to int and print
+                print(f'{key}: {int("00"+value[2],16)} {value[-1]}')
+
+
+
+
 
 # total arguments
 n = len(sys.argv)
@@ -518,7 +629,11 @@ if len(sys.argv) > 1:
             current_battery.read_Permanent_Fail_Dataflash()
             current_battery.print_PF_dataflash_values() 
     if sys.argv[1] == "BQ3060":
-        current_battery= BQ3060()
+        # Open a file in read binary mode
+        with open('data_dict_3060.pkl', 'rb') as file:
+            # Load the dictionary from the file
+            data_dict = pickle.load(file)
+        current_battery= BQ3060(data_dict)
         time.sleep(0.1)
         if sys.argv[2] == "0":
             current_battery.read_from_battery()
@@ -526,6 +641,10 @@ if len(sys.argv) > 1:
         elif sys.argv[2] == "1":
             current_battery.read_1st_level_safety()
             current_battery.print_1st_level_safety_dataflash_value()
+        elif sys.argv[2] == "2":
+            current_battery.read_all_dataflash()
+            #print(current_battery.data_dict)
+            current_battery.print_dataflash_values()
 
 
     #print(current_battery.DataFlash_PermFail)
