@@ -4,6 +4,7 @@ from serial import Serial
 import sys
 import time
 import pickle
+import pandas as pd
 import struct
 
 port = list(list_ports.comports())
@@ -14,7 +15,10 @@ for p in port:
 BAUD = 250000
 # serial port is at /dev/ttyUSB0 (a linux velinni minni)
 #ser = Serial('/dev/ttyUSB0', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
-ser = Serial('COM6', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+# windows fartolva
+#ser = Serial('COM6', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+# bordtolva
+ser = Serial('COM5', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
     
 
 class battery_gauge:
@@ -109,11 +113,14 @@ class battery_gauge:
                             # reverse the first 2 indexes of the list
                             value[2][:2] = value[2][1], value[2][0]
 
-
 class BQ4050(battery_gauge):
 # init function
-    def __init__(self):
+    def __init__(self, data_df= None):
         super().__init__()
+        
+        self.data_df = data_df
+        self.measured_values = []
+        
         self.reg_dict = { 'RemainingCapacityAlarm': ['word', 0x01, None, 'uint16', 'mAh'],
                     'RemainingTimeAlarm':     ['word', 0x02, None, 'uint16', 'min'],
                     'BatteryMode':            ['word', 0x03, None, 'uint16', 'flags'],
@@ -236,8 +243,39 @@ class BQ4050(battery_gauge):
         num = int(bytes[1] + bytes[0], 16)
         if num >= 2**15:
             num -= 2**16
-        return num               
-                                    
+        return num
+
+    def to_unsigned_int(self, bytes):
+        return int(bytes[1] + bytes[0], 16)
+    
+    def bytes_to_hex(self, data): # must be even number of bytes >= 2
+        # flip first and second byte then flip third and fourth byte and so on
+        if len(data) > 1:
+            for i in range(0, len(data), 2):	
+                data[i], data[i+1] = data[i+1], data[i]
+        # make letters in data upper case
+        for i in range(len(data)):
+            k = data[i]
+            data[i] = k.upper()	
+        ret = '0x'
+        # append each byte to ret
+        for i in range(len(data)):	
+            ret += data[i]	
+        return ret
+    
+    def bytes_to_float(self, data):
+        for i in range(0, len(data), 2):	
+                data[i], data[i+1] = data[i+1], data[i]
+        int_list = [int(i, 16) for i in data]
+        bin_str = struct.pack('4B', *int_list)
+        float_num = struct.unpack('f', bin_str)[0]
+        return float_num
+    
+    def to_signed_byte(self, byte):
+        num = int(byte, 16)
+        if num >= 2**7:
+            num -= 2**8
+        return num             
     # print values in reg_dict
     # like this: register name (key): value[2] (value) value[-1] (unit)
     def print_values(self):
@@ -254,65 +292,121 @@ class BQ4050(battery_gauge):
                 else:
                     print(f'{key}: {value[2]} {value[-1]}')
     
-    
-    
-    def read_from_battery(self):
+    def read_basic_SBS(self):
         super().read_SBS_from_battery(self.reg_dict)
-
-    def read_Permanent_Fail_Dataflash(self):
-        super().write_block(0x44, [0x49, 0xC3])
-        time.sleep(0.1)
-        # read 1st block
-        # DC = Datachunk
-        DC1 = super().read_block(0x44)
-        # remove first 3 bytes
-        DC1 = DC1[3:]
-        time.sleep(0.1)
-        # read 2nd block
-        DC2 = super().read_block(0x44)
-        # remove first 3 bytes
-        DC2 = DC2[3:]
-        time.sleep(0.1)
-        # read 3rd block
-        DC3 = super().read_block(0x44)
-        # remove first 3 bytes
-        DC3 = DC3[3:]
-        # now only take first 6 bytes of DC3
-        DC3 = DC3[:7]
-        # combine all 3 blocks
-        DC = DC1 + DC2 + DC3
-        # Add the data from DC to the value in index 2 of the dataflash_permFail dict
-        for key, value in self.DataFlash_PermFail.items():
-            # if value[-2] is uinnt16 or int16, then take 2 bytes from DC
-            # else take 1 byte from DC
-            index = value[1]-0x49C3
-            if value[-2] == 'uint16' or value[-2] == 'int16':
-                value[2] = DC[index:index+2]
-            else:
-                value[2] = DC[index]
-
-    def print_PF_dataflash_values(self):
-        for key, value in self.DataFlash_PermFail.items():
-            if value[-2] == 'uint16' or value[-2] == 'int16':
-                if value[-2] == 'int16':
-                    # then the value is siged in 2's complement, so convert it to int
-                    print(f'{key}: {self.to_signed_int(value[2])} {value[-1]}')
+        
+    def read_from_4050(self, class_, subclass_):
+        test = self.data_df.loc[(self.data_df['Class'] == class_) & (self.data_df['Subclass'] == subclass_)]
+        # print out all rows up to the rows where there is more than 32 bytes between any two rows (Address column)
+        k = 0
+        for i in range(1,len(test)):
+            if test["Address"].iloc[i] - test["Address"].iloc[i-1] > 32:
+                #print(test.iloc[k:i])
+                max_address = test["Address"].iloc[i-1]
+                min_address = test["Address"].iloc[k]
+                type_max_address = test.loc[test["Address"] == max_address, "Type"].values[0]	
+                num_bytes = max_address + int(type_max_address[1:]) - min_address
+                if num_bytes % 32 == 0:
+                    num_reads = num_bytes // 32
                 else:
-                    print(f'{key}: {int(value[2][1]+value[2][0],16)} {value[-1]}')
-            else:
-                # inside value[2] is just a list with a single value for example: ['0x0A']
-                # convert it to int and print
-                print(f'{key}: {int("00"+value[2],16)} {value[-1]}')
+                    num_reads = num_bytes // 32 + 1
+                #print("Num_bytes: ", num_bytes)
+                #print("Num_reads: ", num_reads)
+                
+                # convert min address to hex like this 0x4600 -> [0x46, 0x00]
+                address_read = [min_address >> 8, min_address & 0xFF]
+                
+                super().write_block(0x44, address_read)
+                time.sleep(0.1)
+                
+                temp_data = []
+                for j in range(num_reads):
+                    temp = super().read_block(0x44)
 
+                    temp_data.extend(temp[3:])
+                # read
+                # for each row in test[k:i]
+                
+                for j in range(k,i):
+                    offset = test["Address"].iloc[j] - min_address
+                    #print("offset: ", offset)
+                    # place temp_data[offset:offset+type_size] in test["Measured Value"].iloc[j]
+                    type_size = int(test["Type"].iloc[j][1:])	
+                    #test["Measured Value"].iloc[j] = temp_data[offset:offset+type_size]
+                    self.measured_values.append(temp_data[offset:offset+type_size])
+                k = i
 
+        max_address = test["Address"].iloc[len(test)-1]
+        min_address = test["Address"].iloc[k]
+        # convert min address to hex like this 0x4600 -> [0x46, 0x00]
+        address_read = [min_address >> 8, min_address & 0xFF]
+        super().write_block(0x44, address_read)
+        time.sleep(0.1)
+        type_max_address = test.loc[test["Address"] == max_address, "Type"].values[0]
+        num_bytes = max_address + int(type_max_address[1:]) - min_address	
+        if num_bytes % 32 == 0:
+            num_reads = num_bytes // 32
+        else:
+            num_reads = num_bytes // 32 + 1
+        temp_data = []
+        for j in range(num_reads):
+            temp = super().read_block(0x44)
+            temp_data.extend(temp[3:])
+        #print(temp_data)
+        for j in range(k,len(test)):
+            offset = test["Address"].iloc[j] - min_address
+            #print("offset: ", offset)
+            # place temp_data[offset:offset+type_size] in test["Measured Value"].iloc[j]
+            type_size = int(test["Type"].iloc[j][1:])	
+            #test["Measured Value"].iloc[j] = temp_data[offset:offset+type_size]
+            self.measured_values.append(temp_data[offset:offset+type_size])
+        return 
+
+    def read_all_dataflash_4050(self):
+        # print all sublaclasses (one of each) to see how many different subclasses there are
+        all_classes = self.data_df["Class"].unique()
+        all_subclasses = self.data_df["Subclass"].unique()
+        
+        for i in all_classes:
+            for j in self.data_df.loc[self.data_df['Class'] == i]["Subclass"].unique():
+                self.read_from_4050(i,j)
+
+        # place mesured values in data_df column "Measured Value"
+        print("len(self.measured_values): ", len(self.measured_values))
+        print("shape of data_df: ", self.data_df.shape)
+        # place measured values in data_df (column "Measured Value")
+        self.data_df["Measured Value"] = self.measured_values
+        # if type is I2, convert to int
+        for i in range(len(self.data_df)):	
+            if self.data_df["Type"].iloc[i] == "I2":
+                self.data_df["Measured Value"].iloc[i] = self.to_signed_int(self.data_df["Measured Value"].iloc[i])
+            elif self.data_df["Type"].iloc[i] == "U2":
+                self.data_df["Measured Value"].iloc[i] = self.to_unsigned_int(self.data_df["Measured Value"].iloc[i])
+            elif self.data_df["Type"].iloc[i] == "H1" or self.data_df["Type"].iloc[i] == "H2" or self.data_df["Type"].iloc[i] == "H4":
+                self.data_df["Measured Value"].iloc[i] = self.bytes_to_hex(self.data_df["Measured Value"].iloc[i])
+            elif self.data_df["Type"].iloc[i] == "F4":
+                #self.data_df["Measured Value"].iloc[i] = self.bytes_to_float(self.data_df["Measured Value"].iloc[i])
+                # do nothing
+                pass	
+            # elif first letter of Type is S (string)
+            elif self.data_df["Type"].iloc[i][0] == "S":
+                string_from_reg = ''.join(chr(int(i, 16)) for i in self.data_df["Measured Value"].iloc[i])
+                self.data_df["Measured Value"].iloc[i] = string_from_reg
+            elif self.data_df["Type"].iloc[i] == "U1":
+                self.data_df["Measured Value"].iloc[i] = int(self.data_df["Measured Value"].iloc[i][0], 16)
+            elif self.data_df["Type"].iloc[i] == "I1":
+                self.data_df["Measured Value"].iloc[i] = self.to_signed_byte(self.data_df["Measured Value"].iloc[i][0])
+        return
+                
 class BQ3060(battery_gauge):
 # init function
-    def __init__(self, data_dict = None):
+    def __init__(self,data_df = None):
         super().__init__()
 
         # fyrir dataflash
         #dict={ 'NAME': ['SUBCLASS', 'DATA\rTYPE', None, 'UNIT']}
-        self.data_dict = data_dict
+        self.data_df = data_df
+        self.measured_values = []
 
         self.reg_dict = { 'RemainingCapacityAlarm': ['word', 0x01, None, 'uint16', 'mAh'],
                     'RemainingTimeAlarm':     ['word', 0x02, None, 'uint16', 'min'],
@@ -409,7 +503,6 @@ class BQ3060(battery_gauge):
                                       'OT Dsg Time':            ['Temperature', 'U1',None,  's'],
                                       'OT Dsg Recovery':        ['Temperature', 'I2',None,  '0.1°C']}
 
-
     def to_signed_int(self, bytes):
         num = int(bytes[1] + bytes[0], 16)
         if num >= 2**15:
@@ -420,22 +513,42 @@ class BQ3060(battery_gauge):
         return int(bytes[1] + bytes[0], 16)
 
 
+    # special functions for dataflash because of byte order
     def to_signed_int_dataflash(self, bytes):
         num = int(bytes[0] + bytes[1], 16)
         if num >= 2**15:
             num -= 2**16
         return num
-
+    
     def to_unsigned_int_dataflash(self, bytes):
         return int(bytes[0] + bytes[1], 16)
     
-    # 4 bytes to float
-    #def to_float(self, bytes):
-    #    return struct.unpack('f', bytes.fromhex(bytes))[0]
-        
+    def bytes_to_hex_dataflash(self, data): # must be even number of bytes >= 2
+        # flip first and second byte then flip third and fourth byte and so on
+        # make letters in data upper case
+        for i in range(len(data)):
+            k = data[i]
+            data[i] = k.upper()	
+        ret = '0x'
+        # append each byte to ret
+        for i in range(len(data)):	
+            ret += data[i]	
+        return ret
     
+    def bytes_to_float_dataflash(self, data):
+        int_list = [int(i, 16) for i in data]
+        bin_str = struct.pack('4B', *int_list)
+        float_num = struct.unpack('>f', bin_str)[0]
+        return float_num
+    
+    def to_signed_byte(self, byte):
+        num = int(byte, 16)
+        if num >= 2**7:
+            num -= 2**8
+        return num
+
     # print values in reg_dict
-    # like this: register name (key): value[2] (value) value[-1] (unit)
+    # print the basic SBS registers
     def print_values(self):
         for key, value in self.reg_dict.items():
             if value[0] == 'word':
@@ -450,163 +563,71 @@ class BQ3060(battery_gauge):
                 else:
                     print(f'{key}: {value[2]} {value[-1]}')
     
-    def read_from_battery(self):
+    def read_basic_SBS(self):
         super().read_SBS_from_battery(self.reg_dict)
 
-    def read_1st_level_safety(self):
-
+    def read_from_3060(self, class_, subclass_):
+        test = self.data_df.loc[(self.data_df['CLASS'] == class_) & (self.data_df['SUBCLASS ID'] == subclass_)]
+        # subclass ID: number of bytes according to the datasheet for BQ3060
+        # bugs = {82: 10, 107: 3, 59: 8, 65: 1}
+        two_reads = [34,48,85,106]
         DELAY = 0.02
+        
         time.sleep(DELAY)
-        super().write_word(0x77, [0x00, 0x00])
+        super().write_word(0x77, [int(subclass_), 0x00])
         time.sleep(DELAY)
-
-        # read 1st block
-        # DC = Datachunk
 
         time.sleep(DELAY)
         DC1 = super().read_block(0x78)
         time.sleep(DELAY)
-        # remove first 1 bytes
-        print("DC1: ", DC1)
+        # remove first 1 bytes (which is just the length of the data)
         DC1 = DC1[1:]
 
-        time.sleep(DELAY)
-        super().write_word(0x77, [0x01, 0x00])
-        time.sleep(DELAY)
-
-        # read 2nd block
-        time.sleep(DELAY)
-        DC2 = super().read_block(0x78)
-        time.sleep(DELAY)
-
-        print("DC2: ", DC2)
-        DC2 = DC2[1:]
-
-        time.sleep(DELAY)
-        super().write_word(0x77, [0x02, 0x00])
-        time.sleep(DELAY)
-
-        # read 3rd block
-        time.sleep(DELAY)
-        DC3 = super().read_block(0x78)
-        print("DC3: ", DC3)
-        DC3 = DC3[1:]
-        DC = DC1 + DC2 + DC3
-        # Add the data from DC to the value in index 2 of the dataflash_permFail dict
-        i = 0
-        print("DC: ", DC)
-        print("len(DC): ", len(DC))
-        for key, value in self.first_level_safety_dict.items():
-            if value[1] == 'I2':
-                value[2] = DC[i:i+2]
-                i += 2
-            else:
-                value[2] = DC[i]
-                i += 1
-    
-    def print_1st_level_safety_dataflash_value(self):
-        for key, value in  self.first_level_safety_dict.items():
-            if value[1] == 'I2':
-                print(f'{key}: {self.to_signed_int(value[2])} {value[-1]}')
-            else:
-                # inside value[2] is just a list with a single value for example: ['0x0A']
-                # convert it to int and print
-                print(f'{key}: {int("00"+value[2],16)} {value[-1]}')
 
 
-    def read_all_dataflash(self):
-
-        subclass_ID = [0,1,2,16,17,18,19,20,32,33,34,36,37,38,48,49,56,58,59,64,65,68,85,81,82,96,97,104,105,106,107]
-        # subclass_IDs: 34 --> 38 bytes
-        # subclass_IDs: 48 --> 55 bytes
-        # subclass_IDs: 85 --> 48 bytes
-        # subclass_IDs: 96 --> 32 bytes (sleppur held eg)
-        # subclass_IDs: 106 --> 38 bytes
-        two_reads = [34,48,85,106]
-
-        # subclass ID: number of bytes according to the datasheet for BQ3060
-        bugs = {82: 10, 107: 3, 59: 8, 65: 1}
-
-        DC = []
-        DELAY = 0.02
-
-        for i in subclass_ID:
+        if int(subclass_) in two_reads:
             time.sleep(DELAY)
-            super().write_word(0x77, [i, 0x00])
+            DC2 = super().read_block(0x79)
             time.sleep(DELAY)
-
-            time.sleep(DELAY)
-            DC1 = super().read_block(0x78)
-            time.sleep(DELAY)
-            # remove first 1 bytes
-            DC1 = DC1[1:]
-            # if i is a key in bugs, remove the last bytes
-            if i in bugs:
-                DC1 = DC1[0:bugs[i]]
+            DC2 = DC2[1:]
+            DC1.extend(DC2)
+        
+        for j in range(len(test)):
+            offset = int(test["OFFSET"].iloc[j])
+            type_size = int(test["DATA TYPE"].iloc[j][1:])	
+            self.measured_values.append(DC1[offset:offset+type_size])
+        return
             
-            print(f"subclass ID: {i} first, length = {len(DC1)}", DC1)
-            DC.extend(DC1)
+    def read_all_dataflash_3060(self):
+        # print all sublaclasses (one of each) to see how many different subclasses there are
+        all_classes = self.data_df["CLASS"].unique()
+        all_subclasses = self.data_df["SUBCLASS ID"].unique()
+        for i in all_classes:
+            for j in self.data_df.loc[self.data_df['CLASS'] == i]["SUBCLASS ID"].unique():
+                #print("i: ", i, "j: ", j)
+                self.read_from_3060(i,j)
 
-
-            if i in two_reads:
-                time.sleep(DELAY)
-                DC2 = super().read_block(0x79)
-                time.sleep(DELAY)
-                DC2 = DC2[1:]
-                print(f"subclass ID: {i} second, length = {len(DC2)}", DC2)
-                DC.extend(DC2)
-        # Add the data from DC to the value in index 2 of the dataflash_permFail dict
-        i = 0
-        print("DC: ", DC)
-        print("len(DC): ", len(DC))
-        try:
-            for key, value in self.data_dict.items():
-                if value[1] in ['I2', 'U2', 'H2']:
-                    value[2] = DC[i:i+2]
-                    i += 2
-                elif value[1] in ['S5', 'S8']:
-                    value[2] = DC[i:i+int(value[1][1])]
-                    i += int(value[1][1])
-                    #print("String in question: ", value[2])
-                elif value[1] in ['S12', 'S32']:
-                    value[2] = DC[i:i+int(value[1][1:3])]
-                    #print("String in question: ", value[2])
-                    i += int(value[1][1:3])
-                elif value[1] in ['F4']:
-                    value[2] = DC[i:i+4]
-                    i += 4
-                else:
-                    value[2] = DC[i]
-                    i += 1
-        except IndexError:
-            print("IndexError")
-            print("i: ", i)
-            print("key: ", key)
-
-    def print_dataflash_values(self):
-        print(self.data_dict)
-        i = 0
-        for key, value in  self.data_dict.items():
-            if value[1] == 'I2':
-                print(f'{key}: {self.to_signed_int_dataflash(value[2])} {value[-1]}')
-                i += 1
-            elif value[1] == 'U2':
-                print(f'{key}: {self.to_unsigned_int_dataflash(value[2])} {value[-1]}')
-            elif value[1] == 'H2' or value[1] == 'H1':
-                print(f'{key}: {value[2]} {value[-1]}')
-            elif value[1] in ['S5', 'S8', 'S12', 'S32']:
-                print(value[2])
-                string_from_reg = ''.join(chr(int(i, 16)) for i in value[2])
-                print(f'{key}: {string_from_reg}')
-            elif value[1] == 'F4':
-                #print(f'{key}: {self.to_float(value[2])} {value[-1]}')
-                print(f'{key}: {value[2]} {value[-1]}')
-            else:
-                # inside value[2] is just a list with a single value for example: ['0x0A']
-                # convert it to int and print
-                print(f'{key}: {int("00"+value[2],16)} {value[-1]}')
-
-
+        self.data_df["Measured Value"] = self.measured_values
+        for i in range(len(self.data_df)):	
+            if self.data_df["DATA TYPE"].iloc[i] == "I2":
+                self.data_df["Measured Value"].iloc[i] = self.to_signed_int_dataflash(self.data_df["Measured Value"].iloc[i])
+            elif self.data_df["DATA TYPE"].iloc[i] == "U2":
+                self.data_df["Measured Value"].iloc[i] = self.to_unsigned_int_dataflash(self.data_df["Measured Value"].iloc[i])
+            elif self.data_df["DATA TYPE"].iloc[i] == "H1" or self.data_df["DATA TYPE"].iloc[i] == "H2" or self.data_df["DATA TYPE"].iloc[i] == "H4":
+                self.data_df["Measured Value"].iloc[i] = self.bytes_to_hex_dataflash(self.data_df["Measured Value"].iloc[i])
+            elif self.data_df["DATA TYPE"].iloc[i] == "F4":
+                #self.data_df["Measured Value"].iloc[i] = self.bytes_to_float_dataflash(self.data_df["Measured Value"].iloc[i])
+                # do nothing
+                pass	
+            # elif first letter of DATA TYPE is S (string)
+            elif self.data_df["DATA TYPE"].iloc[i][0] == "S":
+                string_from_reg = ''.join(chr(int(i, 16)) for i in self.data_df["Measured Value"].iloc[i])
+                self.data_df["Measured Value"].iloc[i] = string_from_reg
+            elif self.data_df["DATA TYPE"].iloc[i] == "U1":
+                self.data_df["Measured Value"].iloc[i] = int(self.data_df["Measured Value"].iloc[i][0], 16)
+            elif self.data_df["DATA TYPE"].iloc[i] == "I1":
+                self.data_df["Measured Value"].iloc[i] = self.to_signed_byte(self.data_df["Measured Value"].iloc[i][0])
+        return
 
 
 
@@ -621,30 +642,35 @@ print("\nName of Python script:", sys.argv[0])
 
 if len(sys.argv) > 1:
     if sys.argv[1] == "BQ4050":
-        current_battery= BQ4050()
-        if sys.argv[2] == "0":
-            current_battery.read_from_battery()
-            current_battery.print_values()
-        elif sys.argv[2] == "1":
-            current_battery.read_Permanent_Fail_Dataflash()
-            current_battery.print_PF_dataflash_values() 
-    if sys.argv[1] == "BQ3060":
         # Open a file in read binary mode
-        with open('data_dict_3060.pkl', 'rb') as file:
+        with open('BQ4050_df.pkl', 'rb') as file:
             # Load the dictionary from the file
-            data_dict = pickle.load(file)
-        current_battery= BQ3060(data_dict)
+            data_df = pickle.load(file)
+        current_battery= BQ4050(data_df)
         time.sleep(0.1)
         if sys.argv[2] == "0":
-            current_battery.read_from_battery()
+            current_battery.read_basic_SBS()
+            current_battery.print_values()
+        elif sys.argv[2] == "1": 
+            current_battery.read_all_dataflash_4050()
+            # save dataframe to pickle file
+            with open('saved_BQ4050.pkl', 'wb') as file:	
+                pickle.dump(current_battery.data_df, file)	
+            
+    if sys.argv[1] == "BQ3060":
+        with open('BQ3060_df.pkl', 'rb') as file:
+            # Load the dictionary from the file
+            data_df = pickle.load(file)
+        current_battery= BQ3060(data_df)
+        time.sleep(0.1)
+        if sys.argv[2] == "0":
+            current_battery.read_basic_SBS()
             current_battery.print_values()
         elif sys.argv[2] == "1":
-            current_battery.read_1st_level_safety()
-            current_battery.print_1st_level_safety_dataflash_value()
-        elif sys.argv[2] == "2":
-            current_battery.read_all_dataflash()
-            #print(current_battery.data_dict)
-            current_battery.print_dataflash_values()
+            current_battery.read_all_dataflash_3060()
+            # save dataframe to pickle file
+            with open('saved_BQ3060.pkl', 'wb') as file:	
+                pickle.dump(current_battery.data_df, file)	
 
 
     #print(current_battery.DataFlash_PermFail)
