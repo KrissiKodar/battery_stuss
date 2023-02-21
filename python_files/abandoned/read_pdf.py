@@ -2,6 +2,11 @@ from tabula.io import read_pdf
 import pandas as pd
 import pickle
 
+
+
+
+# abandoned
+
 #file1 = "/home/kristjan/Downloads/3060_technical_reference.pdf"
 #file1 = "/home/kristjan/Downloads/4050_technical_reference.pdf"
 
@@ -15,13 +20,14 @@ table =read_pdf(file1, pages="253-270",  multiple_tables=True)# stream=True) """
 # read pages 253 to 270, but ignore the first 2 tables on page 253
 
 
+file1 = "datasheets/BQ78350_r1_ref.pdf"
+table =read_pdf(file1, pages="145-157",  multiple_tables=False)# stream=True)
 
-
-file1 = "datasheets/BQ3060_tech_ref.pdf"
+#file1 = "datasheets/BQ3060_tech_ref.pdf"
 # lets read from pages 178 to 185
-table =read_pdf(file1, pages="178-185",  multiple_tables=False)#, stream=True)
+#table =read_pdf(file1, pages="178-185",  multiple_tables=False)#, stream=True)
 
-print(type(table[0]))
+#print(type(table[0]))
 
 #print(table[0])
 #print(table[1])

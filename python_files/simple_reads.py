@@ -7,6 +7,13 @@ import pickle
 import pandas as pd
 import struct
 
+import sqlalchemy
+from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
+import pyodbc
+
+
+
 port = list(list_ports.comports())
 print(port)
 for p in port:
@@ -16,10 +23,33 @@ BAUD = 250000
 # serial port is at /dev/ttyUSB0 (a linux velinni minni)
 #ser = Serial('/dev/ttyUSB0', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
 # windows fartolva
-#ser = Serial('COM6', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+ser = Serial('COM6', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
 # bordtolva
-ser = Serial('COM5', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
-    
+#ser = Serial('COM5', BAUD, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+
+####################### SQL ############################
+my_uid = "LAPTOP-GG7823IL\dadas"
+my_pwd = "testpass"
+my_host = "LAPTOP-GG7823IL\SQLEXPRESS"
+my_db = "test"
+my_odbc_driver = "ODBC Driver 17 for SQL Server"
+
+connection_url = URL.create(
+    "mssql+pyodbc",
+    username=my_uid,
+    #password=my_pwd,
+    host=my_host,
+    database=my_db,  # required; not an empty string
+    query={
+        "driver": my_odbc_driver ,
+        "Trusted_Connection": "yes",
+        "TrustServerCertificate": "yes",
+    },
+)
+
+engine = create_engine(connection_url, fast_executemany=True)
+
+##########################################################
 
 class battery_gauge:
     def __init__(self):
@@ -38,6 +68,7 @@ class battery_gauge:
     def wait_and_print(self):
         print()
         while True:
+            time.sleep(0.1)
             if ser.in_waiting > 0:
                 print(f'read {ser.in_waiting} bytes')
                 data = ser.read(ser.in_waiting)
@@ -113,142 +144,136 @@ class battery_gauge:
                             # reverse the first 2 indexes of the list
                             value[2][:2] = value[2][1], value[2][0]
 
+    def read_SBS_from_battery_new(self, df):
+        # df is dataframe
+        # for all values in column "SBS CMD"
+        SBS_list = []
+        for i in df.loc[:, "SBS CMD"]:
+            sbs_command = int(i, 16)
+            # if column "SIZE IN BYTES" is bigger than 2 do block read
+            if int(df.loc[df["SBS CMD"] == i, "SIZE IN BYTES"].values[0]) > 2:
+                # do block, read and put result in column "MEASURED VALUE"
+                SBS_list.append(self.read_block(sbs_command))
+            else:
+                # do word read and put result in column "MEASURED VALUE"
+                SBS_list.append(self.read_word(sbs_command))
+        return SBS_list
+
+
+    def bytes_to_hex(self, data): # must be even number of bytes >= 2
+        # make letters in data upper case
+        for i in range(len(data)):
+            k = data[i]
+            data[i] = k.upper()	
+        ret = '0x'
+        # append each byte to ret
+        for i in range(len(data)):	
+            ret += data[i]	
+        return ret
+
+    def to_signed_int_SBS(self, bytes):
+        num = int(bytes[0] + bytes[1], 16)
+        if num >= 2**15:
+            num -= 2**16
+        return num
+
+    def to_signed_byte(self, byte):
+        num = int(byte, 16)
+        if num >= 2**7:
+            num -= 2**8
+        return num   
+
+
+
+
+    def SBS_update_dataframe(self, df):
+    # if SIZE IN BYTES > 2 the remove first item from MEASURED VALUE list
+        for index, row in df.iterrows():
+            if int(row['SIZE IN BYTES']) > 2:
+                value = row['MEASURED VALUE']
+                # remove first item from list
+                value.pop(0)
+                # update MEASURED VALUE
+                df.at[index, 'MEASURED VALUE'] = value
+
+        for index, row in df.iterrows():
+            # if "SIZE IN BYTES" > 3 and "UNIT" is not "ASCII" and "NAME"
+            if int(row['SIZE IN BYTES']) > 3 and row['UNIT'] != 'ASCII':
+                value = row['MEASURED VALUE']
+                # flip order of list elements, first flip first two elements, then the next two, etc.
+                if len(value) % 2 == 0:
+                    print("len(value): ", len(value))
+                    for i in range(0, len(value), 2):
+                        value[i], value[i+1] = value[i+1], value[i]
+                value = self.bytes_to_hex(value)
+                # update MEASURED VALUE
+                df.at[index, 'MEASURED VALUE'] = value
+
+
+
+        
+        for index, row in df.iterrows():
+            # if FORMAT is "integer" and "SIZE IN BYTES" is 2
+            if row['FORMAT'] == 'integer' and int(row['SIZE IN BYTES']) == 2:
+                value = row['MEASURED VALUE']
+                value = self.to_signed_int_SBS(value)
+                # update MEASURED VALUE
+                df.at[index, 'MEASURED VALUE'] = value
+            # if FORMAT is "integer" and "SIZE IN BYTES" is 1
+            if row['FORMAT'] == 'integer' and int(row['SIZE IN BYTES']) == 1:
+                value = row['MEASURED VALUE']
+                value = self.to_signed_byte(value)
+                # update MEASURED VALUE
+                df.at[index, 'MEASURED VALUE'] = value
+            # if FORMAT is "unsigned int" and "SIZE IN BYTES" is 2
+            if row['FORMAT'] == 'unsigned int' and int(row['SIZE IN BYTES']) == 2:
+                value = row['MEASURED VALUE']
+                value = int(value[0]+value[1],16)
+                # update MEASURED VALUE
+                df.at[index, 'MEASURED VALUE'] = value
+            # FORMAT is "unsigned int" and "SIZE IN BYTES" is 1
+            if row['FORMAT'] == 'unsigned int' and int(row['SIZE IN BYTES']) == 1:
+                value = row['MEASURED VALUE']
+                value = int(value[1],16)
+                # update MEASURED VALUE
+                df.at[index, 'MEASURED VALUE'] = value
+
+            # if FORMAT is hex and "SIZE IN BYTES" is 2 or 1
+            if row['FORMAT'] == 'hex' and (int(row['SIZE IN BYTES']) == 2 or int(row['SIZE IN BYTES']) == 1):
+                value = row['MEASURED VALUE']
+                value = self.bytes_to_hex(value)
+                # update MEASURED VALUE
+                df.at[index, 'MEASURED VALUE'] = value
+            
+            # if FORMAT is "string" and UNIT is "ASCII"
+            if row['FORMAT'] == 'string' and row['UNIT'] == 'ASCII':
+                value = row['MEASURED VALUE']
+                string_from_reg = ''.join(chr(int(i, 16)) for i in value)
+                # update MEASURED VALUE
+                df.at[index, 'MEASURED VALUE'] = string_from_reg
+# BQ40z50-r2
 class BQ4050(battery_gauge):
 # init function
-    def __init__(self, data_df= None):
+    def __init__(self, data_df= None, data_SBS = None):
         super().__init__()
         
         self.data_df = data_df
+        self.data_SBS = data_SBS
         self.measured_values = []
         
-        self.reg_dict = { 'RemainingCapacityAlarm': ['word', 0x01, None, 'uint16', 'mAh'],
-                    'RemainingTimeAlarm':     ['word', 0x02, None, 'uint16', 'min'],
-                    'BatteryMode':            ['word', 0x03, None, 'uint16', 'flags'],
-                    'AtRate':                 ['word', 0x04, None, 'int16', 'mA'],
-                    'AtRateTimeToFull':       ['word', 0x05, None, 'uint16', 'min'],
-                    'AtRateTimeToEmpty':      ['word', 0x06, None, 'uint16', 'min'],
-                    'AtRateOK':               ['word', 0x07, None, 'uint8', ''],
-                    'Temperature':            ['word', 0x08, None, 'int16', '0.1*K'],
-                    'Voltage':                ['word', 0x09, None, 'uint16', 'mV'],
-                    'Current':                ['word', 0x0A, None, 'int16', 'mA'],
-                    'AverageCurrent':         ['word', 0x0B, None, 'int16', 'mA'],
-                    'MaxError':               ['word', 0x0C, None, 'uint8', 'mA'],
-                    'RelativeStateOfCharge':  ['word', 0x0D, None, 'uint8', '%'],
-                    'AbsoluteStateOfCharge':  ['word', 0x0E, None, 'uint8', '%'],
-                    'RemainingCapacity':      ['word', 0x0F, None, 'uint16', 'mAh'],
-                    'FullChargeCapacity':     ['word', 0x10, None, 'uint16', 'mAh'],
-                    'RunTimeToEmpty':         ['word', 0x11, None, 'uint16', 'min'],
-                    'AverageTimeToEmpty':     ['word', 0x12, None, 'uint16', 'min'],
-                    'AverageTimeToFull':      ['word', 0x13, None, 'uint16', 'min'],
-                    'ChargingCurrent':        ['word', 0x14, None, 'uint16', 'mA'],
-                    'ChargingVoltage':        ['word', 0x15, None, 'uint16', 'mV'],
-                    'BatteryStatus':          ['word', 0x16, None, 'uint16', 'flags'],
-                    'CycleCount':             ['word', 0x17, None, 'uint16', ''],
-                    'DesignCapacity':         ['word', 0x18, None, 'uint16', 'mAh'],
-                    'DesignVoltage':          ['word', 0x19, None, 'uint16', 'mV'],
-                    'SpecificationInfo':      ['word', 0x1A, None, 'uint16', ''],
-                    'ManufactureDate':        ['word', 0x1B, None, 'uint16', ''], # ManufacturerDate() value in the following format: Day + Month*32 + (Year–1980)*512
-                    'SerialNumber':           ['word', 0x1C, None, 'uint16', 'flags'],
-                    'ManufacturerName':       ['block', 0x20, None, 'string', ''],
-                    'DeviceName':             ['block', 0x21, None, 'string', ''],
-                    'DeviceChemistry':        ['block', 0x22, None, 'string', ''],
-                    'ManufacturerData':       ['block', 0x23, None, 'string', ''],
-                    'CellVoltage4':           ['word', 0x3C, None, 'uint16', 'mV'],
-                    'CellVoltage3':           ['word', 0x3D, None, 'uint16', 'mV'],
-                    'CellVoltage2':           ['word', 0x3E, None, 'uint16', 'mV'],
-                    'CellVoltage1':           ['word', 0x3F, None, 'uint16', 'mV'],
-                    'BTPDischargeSet':        ['word', 0x4A, None, 'int16', 'mAh'],
-                    'BTPChargeSet':           ['word', 0x4B, None, 'int16', 'mAh'],
-                    'State-of-health':        ['word', 0x4F, None, 'uint8', '%'],
-                    'SafetyAlert':            ['block', 0x50, None, 'uint32', 'flags'],
-                    'SafetyStatus':           ['block', 0x51, None, 'uint32', 'flags'],
-                    'PFAlert':                ['block', 0x52, None, 'uint32', 'flags'],
-                    'PFStatus':               ['block', 0x53, None, 'uint32', 'flags'],
-                    'OperationStatus':        ['block', 0x54, None, 'uint32', 'flags'],
-                    'ChargingStatus':         ['block', 0x55, None, 'uint32', 'flags'],
-                    'GaugingStatus':          ['block', 0x56, None, 'uint32', 'flags'],
-                    'ManufacturingStatus':    ['word', 0x57, None, 'uint32', 'flags'],
-                    'AFERegister':            ['block', 0x58, None, 'uint32', 'flags'],
-                    'MaxTurboPwr':            ['word', 0x59, None, 'uint16', 'cW'],
-                    'SusTurboPwr':            ['word', 0x5A, None, 'uint16', 'cW'],
-                    'TURBO_PACK_R':           ['word', 0x5B, None, 'uint16', 'mOhm'],
-                    'TURBO_SYS_R':            ['word', 0x5C, None, 'uint16', 'mOhm'],
-                    'TURBO_EDV':              ['word', 0x5D, None, 'uint16', 'mV'],
-                    'MaxTurboCurr':           ['word', 0x5E, None, 'uint16', 'mA'],
-                    'SusTurboCurr':           ['word', 0x5F, None, 'uint16', 'mA'],
-                    'LifeTimeDataBlock1':     ['block', 0x60, None, '-', 'flags'],
-                    'LifeTimeDataBlock2':     ['block', 0x61, None, '-', 'flags'],
-                    'LifeTimeDataBlock3':     ['block', 0x62, None, '-', 'flags'],
-                    'LifeTimeDataBlock4':     ['block', 0x63, None, '-', 'flags'],
-                    'LifeTimeDataBlock5':     ['block', 0x64, None, '-', 'flags'],
-                    'ManufacturerInfo':       ['block', 0x70, None, '-', 'flags'],
-                    'DAStatus1':             ['block', 0x71, None, '-', 'flags'],
-                    'DAStatus2':             ['block', 0x72, None, '-', 'flags'],
-                    'GaugeStatus1':         ['block', 0x73, None, '-', 'flags'],
-                    'GaugeStatus2':         ['block', 0x74, None, '-', 'flags'],
-                    'GaugeStatus3':         ['block', 0x75, None, '-', 'flags'],
-                    'CBStatus':            ['block', 0x76, None, '-', 'flags'],
-                    'STH':                 ['block', 0x77, None, '-', 'flags'],
-                    'FilteredCapacity':    ['block', 0x78, None, '-', 'flags']}
-        
-        self.DataFlash_PermFail = {'SUV_Threshold':             ['Threshold',       0x49C3, None, 'int16', 'mV'],
-                                   'SUV_Delay':                 ['Delay',           0x49C5, None, 'uint8', 's'],
-                                   'SOV_Threshold':             ['Threshold',       0x49C6, None, 'int16', 'mV'],
-                                   'SOV_Delay':                 ['Delay',           0x49C8, None, 'uint8', 's'],
-                                   'SOCC_Threshold':            ['Threshold',       0x49C9, None, 'int16', 'mA'],
-                                   'SOCC_Delay':                ['Delay',           0x49CB, None, 'uint8', 's'],
-                                   'SOCD_Threshold':            ['Threshold',       0x49CC, None, 'int16', 'mA'],
-                                   'SOCD_Delay':                ['Delay',           0x49CE, None, 'uint8', 's'],
-                                   'SOT_Threshold':             ['Threshold',       0x49CF, None, 'int16', '0.1*K'],
-                                   'SOT_Delay':                 ['Delay',           0x49D1,  None,'uint8', 's'],
-                                   'SOTF_Threshold':            ['Threshold',       0x49D2, None, 'int16', '0.1*K'],
-                                   'SOTF_Delay':                ['Delay',           0x49D4, None, 'uint8', 's'],
-                                   'Open_Thermistor_Threshold': ['Threshold',       0x49D5, None, 'int16', '0.1*K'],
-                                   'Open_Thermistor_Delay':     ['Delay',           0x49D7, None,  'uint8', 's'],
-                                   'Open_Thermistor_Fet_Delta': ['Fet_Delta',       0x49D8, None, 'int16', '0.1*K'],
-                                   'Open_Thermistor_Cell_Delta':['Cell_Delta',      0x49DA,None,  'int16', '0.1*K'],
-                                   'QIM_Delta_Threshold':       ['Delta_Threshold', 0x49DC,None,  'int16', '0.1%'],
-                                   'QIM_Delay':                 ['Delay',           0x49DE,None,  'uint8', 'updates'],
-                                   'CB_Max_Threshold':          ['Max_Threshold',   0x49DF,None,  'int16', '2 h'],
-                                   'CB_Delta_Threshold':        ['Delta_Threshold', 0x49E1,None,  'uint8', '2 h'],
-                                   'CB_Delay':                  ['Delay',           0x49E2, None, 'uint8', 'cycles'],
-                                   'VIMR_Check_Voltage':        ['Check_Voltage',   0x49E3, None, 'int16', 'mV'],
-                                   'VIMR_Check_Current':        ['Check_Current',   0x49E5, None, 'int16', 'mA'],
-                                   'VIMR_Delta_Threshold':      ['Delta_Threshold', 0x49E7,None,  'int16', 'mV'],
-                                   'VIMR_Delta_Delay':          ['Delta_Delay',     0x49E9, None, 'uint8', 's'],
-                                   'VIMR_Duration':             ['Duration',        0x49EA, None, 'uint16', 's'],
-                                   'VIMA_Check_Voltage':        ['Check_Voltage',   0x49EC, None, 'int16', 'mV'],
-                                   'VIMA_Check_Current':        ['Check_Current',   0x49EE, None, 'int16', 'mA'],
-                                   'VIMA_Delta_Threshold':      ['Delta_Threshold', 0x49F0, None, 'int16', 'mV'],
-                                   'VIMA_Delay':                ['Delay',           0x49F2, None, 'uint8', 's'],
-                                   'IMP_Delta_Threshold':       ['Delta_Threshold', 0x49F3,None,  'int16', '%'],
-                                   'IMP_Max_Threshold':         ['Max_Threshold',   0x49F5, None, 'int16', '%'],
-                                   'IMP_Ra_Update_Counts':      ['Ra_Update_Counts',0x49F7, None, 'uint8', 'counts'],
-                                   'CD_Threshold':              ['Threshold',       0x49F8,None,  'int16', 'mAh'],
-                                   'CD_Delay':                  ['Delay',           0x49FA, None, 'uint8', 'cycles'],
-                                   'CFET_OFF_Threshold':        ['OFF_Threshold',   0x49FB,None,  'int16', 'mA'],
-                                   'CFET_OFF_Delay':            ['OFF_Delay',       0x49FD, None, 'uint8', 's'],
-                                   'DFET_OFF_Threshold':        ['OFF_Threshold',   0x49FE, None,  'int16', 'mA'],
-                                   'DFET_OFF_Delay':            ['OFF_Delay',       0x4A00, None,  'uint8', 's'],
-                                   'FUSE_Threshold':            ['Threshold',       0x4A01, None,  'int16', 'mA'],
-                                   'FUSE_Delay':                ['Delay',           0x4A03, None, 'uint8', 's'],
-                                   'AFER_Threshold':            ['Threshold',       0x4A04, None,  'uint8', 's'],
-                                   'AFER_Delay_Period':         ['Delay_Period',    0x4A05, None, 'uint8', 's'],
-                                   'AFER_Compare_Period':       ['Compare_Period',  0x4A06, None, 'uint8', 's'],
-                                   'AFEC_Threshold':            ['Threshold',       0x4A07, None, 'uint8', 's'],
-                                   'AFEC_Delay_Period':         ['Delay_Period',    0x4A08, None, 'uint8', 's'],
-                                   '2LVL':                      ['Delay',           0x4A09, None, 'uint8', 's']}
-
-    def to_signed_int(self, bytes):
+    ################################################################################
+    # specific functions for dataflash, because the byte order is flipped relative
+    # to the SBS reading (for the BQ4050, little endian)
+    def to_signed_int_dataflash(self, bytes):
         num = int(bytes[1] + bytes[0], 16)
         if num >= 2**15:
             num -= 2**16
         return num
 
-    def to_unsigned_int(self, bytes):
+    def to_unsigned_int_dataflash(self, bytes):
         return int(bytes[1] + bytes[0], 16)
     
-    def bytes_to_hex(self, data): # must be even number of bytes >= 2
+    def bytes_to_hex_dataflash(self, data): # must be even number of bytes >= 2
         # flip first and second byte then flip third and fourth byte and so on
         if len(data) > 1:
             for i in range(0, len(data), 2):	
@@ -262,7 +287,8 @@ class BQ4050(battery_gauge):
         for i in range(len(data)):	
             ret += data[i]	
         return ret
-    
+
+    # not correct I think
     def bytes_to_float(self, data):
         for i in range(0, len(data), 2):	
                 data[i], data[i+1] = data[i+1], data[i]
@@ -276,25 +302,12 @@ class BQ4050(battery_gauge):
         if num >= 2**7:
             num -= 2**8
         return num             
-    # print values in reg_dict
-    # like this: register name (key): value[2] (value) value[-1] (unit)
-    def print_values(self):
-        for key, value in self.reg_dict.items():
-            if value[0] == 'word':
-                if value[-1] == 'flags':
-                    print(f'{key}: {value[2]} {value[-1]}')
-                else:
-                    print(f'{key}: {int(value[2][0]+value[2][1],16)} {value[-1]}')
-            else:
-                if value[-2] == 'string':
-                    string_from_reg = ''.join(chr(int(i, 16)) for i in value[2])
-                    print(f'{key}: {string_from_reg}')
-                else:
-                    print(f'{key}: {value[2]} {value[-1]}')
-    
-    def read_basic_SBS(self):
-        super().read_SBS_from_battery(self.reg_dict)
-        
+
+    def read_basic_SBS_new(self):
+        from_reads_SBS = super().read_SBS_from_battery_new(self.data_SBS)
+        self.data_SBS["MEASURED VALUE"] = from_reads_SBS
+        super().SBS_update_dataframe(self.data_SBS)
+
     def read_from_4050(self, class_, subclass_):
         test = self.data_df.loc[(self.data_df['Class'] == class_) & (self.data_df['Subclass'] == subclass_)]
         # print out all rows up to the rows where there is more than 32 bytes between any two rows (Address column)
@@ -379,11 +392,11 @@ class BQ4050(battery_gauge):
         # if type is I2, convert to int
         for i in range(len(self.data_df)):	
             if self.data_df["Type"].iloc[i] == "I2":
-                self.data_df["Measured Value"].iloc[i] = self.to_signed_int(self.data_df["Measured Value"].iloc[i])
+                self.data_df["Measured Value"].iloc[i] = self.to_signed_int_dataflash(self.data_df["Measured Value"].iloc[i])
             elif self.data_df["Type"].iloc[i] == "U2":
-                self.data_df["Measured Value"].iloc[i] = self.to_unsigned_int(self.data_df["Measured Value"].iloc[i])
+                self.data_df["Measured Value"].iloc[i] = self.to_unsigned_int_dataflash(self.data_df["Measured Value"].iloc[i])
             elif self.data_df["Type"].iloc[i] == "H1" or self.data_df["Type"].iloc[i] == "H2" or self.data_df["Type"].iloc[i] == "H4":
-                self.data_df["Measured Value"].iloc[i] = self.bytes_to_hex(self.data_df["Measured Value"].iloc[i])
+                self.data_df["Measured Value"].iloc[i] = self.bytes_to_hex_dataflash(self.data_df["Measured Value"].iloc[i])
             elif self.data_df["Type"].iloc[i] == "F4":
                 #self.data_df["Measured Value"].iloc[i] = self.bytes_to_float(self.data_df["Measured Value"].iloc[i])
                 # do nothing
@@ -397,143 +410,46 @@ class BQ4050(battery_gauge):
             elif self.data_df["Type"].iloc[i] == "I1":
                 self.data_df["Measured Value"].iloc[i] = self.to_signed_byte(self.data_df["Measured Value"].iloc[i][0])
         return
-                
+
+
+
+# TODO: make class for bq78350
+# BQ78350-r1
+#class BQ78350(battery_gauge):
+
+
+# bq3060
 class BQ3060(battery_gauge):
 # init function
-    def __init__(self,data_df = None):
+    def __init__(self, data_df= None, data_SBS = None):
         super().__init__()
 
-        # fyrir dataflash
-        #dict={ 'NAME': ['SUBCLASS', 'DATA\rTYPE', None, 'UNIT']}
         self.data_df = data_df
+        self.data_SBS = data_SBS
         self.measured_values = []
 
-        self.reg_dict = { 'RemainingCapacityAlarm': ['word', 0x01, None, 'uint16', 'mAh'],
-                    'RemainingTimeAlarm':     ['word', 0x02, None, 'uint16', 'min'],
-                    'BatteryMode':            ['word', 0x03, None, 'uint16', 'flags'],
-                    'AtRate':                 ['word', 0x04, None, 'int16', 'mA'],
-                    'AtRateTimeToFull':       ['word', 0x05, None, 'uint16', 'min'],
-                    'AtRateTimeToEmpty':      ['word', 0x06, None, 'uint16', 'min'],
-                    'AtRateOK':               ['word', 0x07, None, 'uint8', ''],
-                    'Temperature':            ['word', 0x08, None, 'int16', '0.1*K'],
-                    'Voltage':                ['word', 0x09, None, 'uint16', 'mV'],
-                    'Current':                ['word', 0x0A, None, 'int16', 'mA'],
-                    'AverageCurrent':         ['word', 0x0B, None, 'int16', 'mA'],
-                    'MaxError':               ['word', 0x0C, None, 'uint8', 'mA'],
-                    'RelativeStateOfCharge':  ['word', 0x0D, None, 'uint8', '%'],
-                    'AbsoluteStateOfCharge':  ['word', 0x0E, None, 'uint8', '%'],
-                    'RemainingCapacity':      ['word', 0x0F, None, 'uint16', 'mAh'],
-                    'FullChargeCapacity':     ['word', 0x10, None, 'uint16', 'mAh'],
-                    'RunTimeToEmpty':         ['word', 0x11, None, 'uint16', 'min'],
-                    'AverageTimeToEmpty':     ['word', 0x12, None, 'uint16', 'min'],
-                    'AverageTimeToFull':      ['word', 0x13, None, 'uint16', 'min'],
-                    'ChargingCurrent':        ['word', 0x14, None, 'uint16', 'mA'],
-                    'ChargingVoltage':        ['word', 0x15, None, 'uint16', 'mV'],
-                    'BatteryStatus':          ['word', 0x16, None, 'uint16', 'flags'],
-                    'CycleCount':             ['word', 0x17, None, 'uint16', ''],
-                    'DesignCapacity':         ['word', 0x18, None, 'uint16', 'mAh'],
-                    'DesignVoltage':          ['word', 0x19, None, 'uint16', 'mV'],
-                    'SpecificationInfo':      ['word', 0x1A, None, 'uint16', ''],
-                    'ManufactureDate':        ['word', 0x1B, None, 'uint16', ''], # ManufacturerDate() value in the following format: Day + Month*32 + (Year–1980)*512
-                    'SerialNumber':           ['word', 0x1C, None, 'uint16', ''],
-                    'ManufacturerName':       ['block', 0x20, None, 'string', ''],
-                    'DeviceName':             ['block', 0x21, None, 'string', ''],
-                    'DeviceChemistry':        ['block', 0x22, None, 'string', ''],
-                    'ManufacturerData':       ['block', 0x23, None, 'string', ''],
-                    'CellVoltage4':           ['word', 0x3C, None, 'uint16', 'mV'],
-                    'CellVoltage3':           ['word', 0x3D, None, 'uint16', 'mV'],
-                    'CellVoltage2':           ['word', 0x3E, None, 'uint16', 'mV'],
-                    'CellVoltage1':           ['word', 0x3F, None, 'uint16', 'mV'],
-                    'State-of-health':        ['word', 0x4F, None, 'uint8', '%'],
-                    'SafetyAlert':            ['word', 0x50, None, 'uint16', 'flags'],
-                    'SafetyStatus':           ['word', 0x51, None, 'uint16', 'flags'],
-                    'PFAlert':                ['word', 0x52, None, 'uint16', 'flags'],
-                    'PFStatus':               ['word', 0x53, None, 'uint16', 'flags'],
-                    'OperationStatus':        ['word', 0x54, None, 'uint16', 'flags'],
-                    'ChargingStatus':         ['word', 0x55, None, 'uint16', 'flags'],
-                    'ResetData':              ['word', 0x57, None, 'uint16', 'flags'],
-                    'WDResetData':            ['word', 0x58, None, 'uint16', 'flags'],
-                    'PackVoltage':            ['word', 0x5A, None, 'uint16', 'mV'],
-                    'AverageVoltage':         ['word', 0x5D, None, 'uint16', 'mV'],
-                    'UnSealKey':              ['block', 0x60, None, 'uint32', 'flags'],
-                    'FullAccessKey':          ['block', 0x61, None, 'uint32', 'flags'],
-                    'PFKey':                  ['block', 0x62, None, 'uint32', 'flags'],
-                    'AuthenKey3':             ['block', 0x63, None, 'uint32', 'flags'],
-                    'AuthenKey2':             ['block', 0x64, None, 'uint32', 'flags'],
-                    'Authenkey1':             ['block', 0x65, None, 'uint32', 'flags'],
-                    'AuthenKey0':             ['block', 0x66, None, 'uint32', 'flags'],
-                    'ManufacturerInfo':       ['block', 0x70, None, 'string', 'flags'],
-                    'SenseResistor':          ['word',  0x71, None, 'uint16', 'microOhm'],
-                    'TempRange':              ['word',  0x72, None, 'uint16', 'flags'],
-                    'DataFlashSubClassISize': ['block', 0x77, None, 'uint16', 'flags'],
-                    'DataFlashSubClassPage1': ['block', 0x78, None, 'H32', 'flags'],
-                    'DataFlashSubClassPage2': ['block', 0x79, None, 'H32', 'flags'],
-                    'DataFlashSubClassPage3': ['block', 0x7A, None, 'H32', 'flags'],
-                    'DataFlashSubClassPage4': ['block', 0x7B, None, 'H32', 'flags'],
-                    'DataFlashSubClassPage5': ['block', 0x7C, None, 'H32', 'flags'],
-                    'DataFlashSubClassPage6': ['block', 0x7D, None, 'H32', 'flags'],
-                    'DataFlashSubClassPage7': ['block', 0x7E, None, 'H32', 'flags'],
-                    'DataFlashSubClassPage8': ['block', 0x7F, None, 'H32', 'flags']}
-    
-        self.first_level_safety_dict = {'LT COV Threshold':     ['Voltage', 'I2', None, 'mV'], 
-                                      'LT COV Recovery':        ['Voltage', 'I2', None, 'mV'], 
-                                      'ST COV Threshold':       ['Voltage', 'I2', None, 'mV'], 
-                                      'ST COV Recovery':        ['Voltage', 'I2', None, 'mV'], 
-                                      'HT COV Threshold':       ['Voltage', 'I2', None, 'mV'], 
-                                      'HT COV Recovery':        ['Voltage', 'I2', None, 'mV'], 
-                                      'CUV Threshold':          ['Voltage', 'I2', None, 'mV'], 
-                                      'CUV Recovery':           ['Voltage', 'I2', None, 'mV'], 
-                                      'OC (1st Tier) Chg':      ['Current', 'I2', None, 'mA'],
-                                      'OC (1st Tier) Chg Time': ['Current', 'U1', None, 's'], 
-                                      'OC Chg Recovery':        ['Current', 'I2', None, 'mA'], 
-                                      'OC (1st Tier) Dsg':      ['Current', 'I2', None, 'mA'], 
-                                      'OC (1st Tier) Dsg Time': ['Current', 'U1', None, 's'], 
-                                      'OC Dsg Recovery':        ['Current', 'I2', None, 'mA'], 
-                                      'Current Recovery Time':  ['Current', 'U1', None, 's'], 
-                                      'AFE OC Dsg':             ['Current', 'H1', None, None],
-                                      'AFE OC Dsg Time':        ['Current', 'H1', None, None], 
-                                      'AFE OC Dsg Recovery':    ['Current', 'I2', None, 'mA'],
-                                      'AFE SC Chg Cfg':         ['Current', 'H1', None, None], 
-                                      'AFE SC Dsg Cfg':         ['Current', 'H1', None, None], 
-                                      'AFE SC Recovery':        ['Current', 'I2', None, 'mA'],
-                                      'Over Temp Chg':          ['Temperature', 'I2',None,  '0.1°C'], 
-                                      'OT Chg Time':            ['Temperature', 'U1',None,  's'],
-                                      'OT Chg Recovery':        ['Temperature', 'I2',None,  '0.1°C'], 
-                                      'Over Temp Dsg':          ['Temperature', 'I2',None,  '0.1°C'],
-                                      'OT Dsg Time':            ['Temperature', 'U1',None,  's'],
-                                      'OT Dsg Recovery':        ['Temperature', 'I2',None,  '0.1°C']}
-
+         
     def to_signed_int(self, bytes):
-        num = int(bytes[1] + bytes[0], 16)
+        num = int(bytes[0] + bytes[1], 16)
         if num >= 2**15:
             num -= 2**16
         return num
 
     def to_unsigned_int(self, bytes):
-        return int(bytes[1] + bytes[0], 16)
-
-
-    # special functions for dataflash because of byte order
-    def to_signed_int_dataflash(self, bytes):
-        num = int(bytes[0] + bytes[1], 16)
-        if num >= 2**15:
-            num -= 2**16
-        return num
-    
-    def to_unsigned_int_dataflash(self, bytes):
         return int(bytes[0] + bytes[1], 16)
-    
-    def bytes_to_hex_dataflash(self, data): # must be even number of bytes >= 2
-        # flip first and second byte then flip third and fourth byte and so on
-        # make letters in data upper case
-        for i in range(len(data)):
-            k = data[i]
-            data[i] = k.upper()	
-        ret = '0x'
-        # append each byte to ret
-        for i in range(len(data)):	
-            ret += data[i]	
-        return ret
+
+
+    def bytes_to_hex(self, data): # must be even number of bytes >= 2
+
+            # make letters in data upper case
+            for i in range(len(data)):
+                k = data[i]
+                data[i] = k.upper()	
+            ret = '0x'
+            # append each byte to ret
+            for i in range(len(data)):	
+                ret += data[i]	
+            return ret
     
     def bytes_to_float_dataflash(self, data):
         int_list = [int(i, 16) for i in data]
@@ -546,26 +462,13 @@ class BQ3060(battery_gauge):
         if num >= 2**7:
             num -= 2**8
         return num
-
-    # print values in reg_dict
-    # print the basic SBS registers
-    def print_values(self):
-        for key, value in self.reg_dict.items():
-            if value[0] == 'word':
-                if value[-1] == 'flags':
-                    print(f'{key}: {value[2]} {value[-1]}')
-                else:
-                    print(f'{key}: {int(value[2][0]+value[2][1],16)} {value[-1]}')
-            else:
-                if value[-2] == 'string':
-                    string_from_reg = ''.join(chr(int(i, 16)) for i in value[2])
-                    print(f'{key}: {string_from_reg}')
-                else:
-                    print(f'{key}: {value[2]} {value[-1]}')
     
-    def read_basic_SBS(self):
-        super().read_SBS_from_battery(self.reg_dict)
+    def read_basic_SBS_new(self):
+        from_reads_SBS = super().read_SBS_from_battery_new(self.data_SBS)
+        self.data_SBS["MEASURED VALUE"] = from_reads_SBS
+        super().SBS_update_dataframe(self.data_SBS)
 
+    # read dataflash from bq3060
     def read_from_3060(self, class_, subclass_):
         test = self.data_df.loc[(self.data_df['CLASS'] == class_) & (self.data_df['SUBCLASS ID'] == subclass_)]
         # subclass ID: number of bytes according to the datasheet for BQ3060
@@ -610,11 +513,11 @@ class BQ3060(battery_gauge):
         self.data_df["Measured Value"] = self.measured_values
         for i in range(len(self.data_df)):	
             if self.data_df["DATA TYPE"].iloc[i] == "I2":
-                self.data_df["Measured Value"].iloc[i] = self.to_signed_int_dataflash(self.data_df["Measured Value"].iloc[i])
+                self.data_df["Measured Value"].iloc[i] = self.to_signed_int(self.data_df["Measured Value"].iloc[i])
             elif self.data_df["DATA TYPE"].iloc[i] == "U2":
-                self.data_df["Measured Value"].iloc[i] = self.to_unsigned_int_dataflash(self.data_df["Measured Value"].iloc[i])
+                self.data_df["Measured Value"].iloc[i] = self.to_unsigned_int(self.data_df["Measured Value"].iloc[i])
             elif self.data_df["DATA TYPE"].iloc[i] == "H1" or self.data_df["DATA TYPE"].iloc[i] == "H2" or self.data_df["DATA TYPE"].iloc[i] == "H4":
-                self.data_df["Measured Value"].iloc[i] = self.bytes_to_hex_dataflash(self.data_df["Measured Value"].iloc[i])
+                self.data_df["Measured Value"].iloc[i] = self.bytes_to_hex(self.data_df["Measured Value"].iloc[i])
             elif self.data_df["DATA TYPE"].iloc[i] == "F4":
                 #self.data_df["Measured Value"].iloc[i] = self.bytes_to_float_dataflash(self.data_df["Measured Value"].iloc[i])
                 # do nothing
@@ -628,8 +531,6 @@ class BQ3060(battery_gauge):
             elif self.data_df["DATA TYPE"].iloc[i] == "I1":
                 self.data_df["Measured Value"].iloc[i] = self.to_signed_byte(self.data_df["Measured Value"].iloc[i][0])
         return
-
-
 
 # total arguments
 n = len(sys.argv)
@@ -646,32 +547,58 @@ if len(sys.argv) > 1:
         with open('BQ4050_df.pkl', 'rb') as file:
             # Load the dictionary from the file
             data_df = pickle.load(file)
-        current_battery= BQ4050(data_df)
+        with open('SBS_BQ4050.pkl', 'rb') as file:
+            # Load the dictionary from the file
+            data_SBS = pickle.load(file)
+        current_battery= BQ4050(data_df, data_SBS)
         time.sleep(0.1)
         if sys.argv[2] == "0":
-            current_battery.read_basic_SBS()
-            current_battery.print_values()
+
+            current_battery.read_basic_SBS_new()
+
+            print(current_battery.data_SBS[:20])
+
+            with open('BQ4050_SBS_saved.pkl', 'wb') as file:
+                pickle.dump(current_battery.data_SBS, file)
+            
+            current_battery.data_SBS.to_sql('BQ4050_SBS', engine, if_exists='replace')
+            
         elif sys.argv[2] == "1": 
             current_battery.read_all_dataflash_4050()
             # save dataframe to pickle file
+            
             with open('saved_BQ4050.pkl', 'wb') as file:	
-                pickle.dump(current_battery.data_df, file)	
+                pickle.dump(current_battery.data_df, file)
+            
+            current_battery.data_df.to_sql('BQ4050', engine, if_exists='replace')
             
     if sys.argv[1] == "BQ3060":
         with open('BQ3060_df.pkl', 'rb') as file:
             # Load the dictionary from the file
             data_df = pickle.load(file)
-        current_battery= BQ3060(data_df)
+        with open('SBS_BQ3060.pkl', 'rb') as file:
+            # Load the dictionary from the file
+            data_SBS = pickle.load(file)
+        current_battery= BQ3060(data_df, data_SBS)
         time.sleep(0.1)
         if sys.argv[2] == "0":
-            current_battery.read_basic_SBS()
-            current_battery.print_values()
+
+            current_battery.read_basic_SBS_new()
+
+            print(current_battery.data_SBS[:20])
+            
+            with open('BQ3060_SBS_saved.pkl', 'wb') as file:
+                pickle.dump(current_battery.data_SBS, file)
+            current_battery.data_SBS.to_sql('BQ3060_SBS', engine, if_exists='replace')
+
         elif sys.argv[2] == "1":
             current_battery.read_all_dataflash_3060()
             # save dataframe to pickle file
             with open('saved_BQ3060.pkl', 'wb') as file:	
-                pickle.dump(current_battery.data_df, file)	
-
-
-    #print(current_battery.DataFlash_PermFail)
-
+                pickle.dump(current_battery.data_df, file)
+            
+            current_battery.data_df.to_sql('BQ3060', engine, if_exists='replace')
+    
+    if sys.argv[1] == "BQ78350":
+        # TODO: add BQ78350
+        pass
