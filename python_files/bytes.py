@@ -1,21 +1,21 @@
 
 
-def to_signed_int(bytes):
-        num = int(bytes[0] + bytes[1], 16)
-        if num >= 2**15:
-            num -= 2**16
-        return num
+class P:
+    def __init__(self, x):
+        # wait for Arduino to be ready
+        self.x = x
+
+    def f(self):
+        return self.x
 
 
-# function to convert a single signed byte to int
-def to_signed_byte(byte):
-    num = int(byte, 16)
-    if num >= 2**7:
-        num -= 2**8
-    return num
+parent = P(100)
 
-value=['0x01','0xFF']
-print(int(value[0][2:]+value[1][2:],16))
+# make child class C that inherits the specific instance of P (parent)
+class C(P):
+    def __init__(self, parent_instance):
+        self.x = parent_instance.x + 1
+        
+child_test = C(200)
 
-signed_byte = ['0xFF']
-print(to_signed_byte(signed_byte[0]))
+print(child_test.x)

@@ -236,6 +236,10 @@ SBS_78350.loc[SBS_78350["SIZE IN BYTES"] == "?", "SIZE IN BYTES"] = "4"
 # change occurances of "—" in SIZE IN BYTES column to 32
 SBS_78350.loc[SBS_78350["SIZE IN BYTES"] == "—", "SIZE IN BYTES"] = "32"
 
+
+# in row DeviceName change "DEFAULT" to bq40z50-R2
+SBS_78350.loc[SBS_78350["NAME"] == "DeviceName", "DEFAULT"] = "bq40z50-R2"
+
 print(SBS_78350[-30:])
 
 SBS_4050 = SBS_78350
