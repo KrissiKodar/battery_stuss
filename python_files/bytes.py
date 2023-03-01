@@ -1,21 +1,13 @@
-
-
-class P:
-    def __init__(self, x):
-        # wait for Arduino to be ready
-        self.x = x
-
-    def f(self):
-        return self.x
-
-
-parent = P(100)
-
-# make child class C that inherits the specific instance of P (parent)
-class C(P):
-    def __init__(self, parent_instance):
-        self.x = parent_instance.x + 1
-        
-child_test = C(200)
-
-print(child_test.x)
+# Assuming little endian byte order and IEEE 754 single-precision format
+bytes_list = ['82', '3e', 'da', 'd9']
+bytes_list = ['da', 'd9','82', '3e']
+# flip bytes
+#bytes_list.reverse()
+#Floating point values are stored using a 4-byte format, where the LSB is the exponent, bytes 1 to 3 are the
+#mantissa in unsigned integer format, with the MSB in byte 1 as a signed bit.
+# convert bytes to float
+# Assuming little endian byte order and IEEE 754 single-precision format
+import struct
+bytes_obj = bytes.fromhex(''.join(bytes_list)) # Convert hex strings to bytes object
+float_val = struct.unpack('f', bytes_obj)[0] # Convert bytes object to float
+print(float_val) # Output: 1.7213997840881348e-38

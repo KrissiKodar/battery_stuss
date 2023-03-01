@@ -244,6 +244,8 @@ print(SBS_78350[-30:])
 
 SBS_4050 = SBS_78350
 
+# print row where column "NAME" is "Authenticate"
+print(SBS_4050.loc[SBS_4050["NAME"] == "Authenticate"])
 
 # save pickle
 with open('SBS_BQ4050.pkl', 'wb') as f:

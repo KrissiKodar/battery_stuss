@@ -56,9 +56,17 @@ SBS_78350.columns = SBS_78350.columns.str.upper()
 # remove all instances of "+1" form column "SIZE IN BYTES"
 SBS_78350["SIZE IN BYTES"] = SBS_78350["SIZE IN BYTES"].str.replace("\+1", "")
 
-print(SBS_78350[-30:])
+
 print("length of SBS_78350: ", len(SBS_78350))
 
+#print row where column "SBS CMD" is "0x2F"
+print(SBS_78350.loc[SBS_78350["SBS CMD"] == "0x2F"])
+# print print next 10 rows after row where column "SBS CMD" is "0x2F"
+print(SBS_78350.loc[SBS_78350["SBS CMD"] == "0x2F"].iloc[0:10])
 # save pickle
-with open('SBS_BQ78350.pkl', 'wb') as f:
-    pickle.dump(SBS_78350, f)
+
+# remove row where "NAME" is "Reserved"
+SBS_78350 = SBS_78350[SBS_78350.NAME != "Reserved"]
+print(SBS_78350[45:65])
+""" with open('SBS_BQ78350.pkl', 'wb') as f:
+    pickle.dump(SBS_78350, f) """

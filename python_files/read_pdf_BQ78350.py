@@ -13,7 +13,7 @@ table =read_pdf(file1, pages="145-157",  multiple_tables=True)
 
 
 #print(type(table[0]))
-print(len(table))
+#print(len(table))
 #print(table[1])
 #print(table[0])
 #print(table[1])
@@ -21,7 +21,7 @@ print(len(table))
 for i in range(2,len(table)):
     table[1] = table[1].append(table[i], ignore_index=True)
 
-print(table[1])
+#print(table[1])
 
 #remove all instances of '\r', '\t' and '\n' from all columns
 for column in table[1]:
@@ -29,7 +29,7 @@ for column in table[1]:
     table[1][column] = table[1][column].str.replace('\t', ' ')
     table[1][column] = table[1][column].str.replace('\n', ' ')
 
-print(table[1])
+#print(table[1])
 
 
 # add column "Measured Value" to table[1] and fill it with None
@@ -40,8 +40,8 @@ table[1].insert(5, "Measured Value", None)
 table[1]["Address"] = table[1]["Address"].apply(lambda x: int(x, 16))
 
 
-print(table[1][20:60])
 
-""" with open('BQ78350_df.pkl', 'wb') as file:
+print(table[1][20:40])
+with open('BQ78350_df.pkl', 'wb') as file:
     # Dump the dictionary to the file
-    pickle.dump(table[1], file) """
+    pickle.dump(table[1], file)

@@ -9,8 +9,8 @@ file1 = "datasheets/BQ40z50_r2_tech_ref.pdf"
 table =read_pdf(file1, pages="253-270",  multiple_tables=True)# stream=True)
 
 
-print(len(table))
-print(table[2])
+#print(len(table))
+#print(table[2])
 
 
 # combine tables table[2] to table[-1] into one table
@@ -33,15 +33,15 @@ table[2].insert(5, "Measured Value", None)
 
 
 #print row 2 in column Address
-print(type(table[2].loc[2, "Address"]))
+#print(type(table[2].loc[2, "Address"]))
 
 # convert Address where the numbers are strings "0x0000" to 32 bit integers
 table[2]["Address"] = table[2]["Address"].apply(lambda x: int(x, 16))
 
-print(table[2][10:40])
+print(table[2].head(10))
 
 
 # save table[2] to pickle file
 """ with open('BQ4050_df.pkl', 'wb') as file:
-    # Dump the dictionary to the file
+    # Dump the dictionary to the fileq
     pickle.dump(table[2], file) """

@@ -61,17 +61,23 @@ if __name__ == "__main__":
             if continue_or_not == "q":
                 break
             startup = battery_gauge(ser)
+            time.sleep(0.1)
             startup.wait_for_connection()
+            time.sleep(0.1)
             which_battery = startup.identify_device()
+            
 
             if which_battery == "bq3060":
                 print("bq3060")
                 serial_number = startup.serial_number()
                 time.sleep(0.1)
+                print("test")
                 with open('BQ3060_df.pkl', 'rb') as file:
+                    print("1 ???")
                     # Load the dictionary from the file
                     data_df = pickle.load(file)
                 with open('SBS_BQ3060.pkl', 'rb') as file:
+                    print("2 ???")
                     # Load the dictionary from the file
                     data_SBS = pickle.load(file)
                 print("check")
@@ -128,10 +134,45 @@ if __name__ == "__main__":
                 print("Done saving dataflash for BQ4050 (pickle file, pandas dataframe)...")
                 current_battery.data_df.to_sql('BQ4050_' + serial_number + '_dataflash', engine, if_exists='replace')
                 print("Done sending dataflash for BQ4050 to server...")
+            if which_battery == "1737":
+                serial_number = startup.serial_number()
+                time.sleep(0.1)
+                with open('BQ78350_df.pkl', 'rb') as file:
+                    # Load the dictionary from the file
+                    data_df = pickle.load(file)
+                with open('SBS_BQ78350.pkl', 'rb') as file:
+                    # Load the dictionary from the file
+                    data_SBS = pickle.load(file)
+                current_battery= BQ78350(ser, data_df, data_SBS)
+                time.sleep(0.1)
+                current_battery.read_basic_SBS_new()
+                print("Done reading SBS data for BQ78350...")
+                with open('BQ78350_'+ serial_number + '_SBS.pkl', 'wb') as file:
+                    pickle.dump(current_battery.data_SBS, file)
+                print("Done saving SBS data for BQ78350 (pickle file, pandas dataframe)...")
+                current_battery.data_SBS.to_sql('BQ78350_'+ serial_number + '_SBS', engine, if_exists='replace')
+                print("Done sending SBS data for BQ78350 to server...")
+
+                time.sleep(0.1)
+                current_battery.read_all_dataflash_78350()
+                print("Done reading dataflash for BQ78350...")
+                # save dataframe to pickle file
+                with open('BQ78350_' + serial_number + '_dataflash.pkl', 'wb') as file:	
+                    pickle.dump(current_battery.data_df, file)
+                print("Done saving dataflash for BQ78350 (pickle file, pandas dataframe)...")
+                current_battery.data_df.to_sql('BQ78350_' + serial_number + '_dataflash', engine, if_exists='replace')
+                print("Done sending dataflash for BQ78350 to server...")
+
+
         except:
+            # print exception message
+            print("Error: ", sys.exc_info()[0])
+            # specify the error message
+            print("Error: ", sys.exc_info()[1])
             if k % 10 == 0:
                 print("Finding battery...")
             k+=1
+            ser.close()
             time.sleep(0.1)
             pass
     
